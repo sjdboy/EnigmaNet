@@ -1,0 +1,6 @@
+﻿
+rabbitmqctl add_vhost {vhost} //新建虚拟机
+rabbitmqctl add_user {username} {pwd} //新建用户及密码
+rabbitmqctl set_permissions -p {vhost} {username} "" ".*" ".*" //设置用户访问虚拟机权限
+rabbitmqctl set_permissions -p {vhost} guest ".*" ".*" ".*" //设置guest用户管理权限
+
