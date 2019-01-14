@@ -1,5 +1,6 @@
 ﻿using EnigmaNet.Exceptions;
 using EnigmaNet.Extensions;
+using EnigmaNet.QCloud.Cos.Models;
 using EnigmaNet.Utils;
 using Microsoft.Extensions.Logging;
 using System;
@@ -127,7 +128,7 @@ namespace EnigmaNet.QCloud.Cos.Impl
 
         string GetCosHost()
         {
-            //ny01-1253908385.cos.ap-shanghai.myqcloud.com
+            // ny01-1253908385.cos.ap-shanghai.myqcloud.com
             return $"{Bucket}-{AppId}.cos.{Region}.myqcloud.com";
         }
 
@@ -216,23 +217,6 @@ namespace EnigmaNet.QCloud.Cos.Impl
             var timeSpan = expiredTimeSpan ?? TimeSpan.FromSeconds(DefaultExpiredSeconds);
             var authorization = CreateAuthorization(path, HttpMethod.Get, DateTime.Now, DateTime.Now.Add(timeSpan));
             return $"https://{host}{path}?{authorization}";
-        }
-
-        public void GetObjectUploadInfo(string path, out string putUrl, out string authorization)
-        {
-            if (string.IsNullOrEmpty(path))
-            {
-                throw new ArgumentNullException(nameof(path));
-            }
-
-            if (!path.StartsWith("/"))
-            {
-                throw new ArgumentException($"path is not start with /", nameof(path));
-            }
-
-            var host = GetCosHost();
-            authorization = CreateAuthorization(path, HttpMethod.Put, DateTime.Now, DateTime.Now.AddMinutes(CosApiValidMinutes));
-            putUrl = $"https://{host}{path}";
         }
 
         public async Task<long> GetObjectContentLengthAsync(string path)
@@ -325,6 +309,33 @@ namespace EnigmaNet.QCloud.Cos.Impl
                     throw new BizException("上传文件出错");
                 }
             }
+        }
+
+        public Task<UploadInfoModel> GetObjectUploadInfo(HttpMethod httpMethod, string path, TimeSpan? expiredTimeSpan = null)
+        {
+            if (string.IsNullOrEmpty(path))
+            {
+                throw new ArgumentNullException(nameof(path));
+            }
+
+            if (!path.StartsWith("/"))
+            {
+                throw new ArgumentException($"path is not start with /", nameof(path));
+            }
+
+            if (!expiredTimeSpan.HasValue)
+            {
+                expiredTimeSpan = TimeSpan.FromMilliseconds(CosApiValidMinutes);
+            }
+
+            return Task.FromResult(new UploadInfoModel
+            {
+                Bucket = Bucket,
+                AppId = AppId,
+                Region = Region,
+                UploadUrl = $"https://{GetCosHost()}{path}",
+                Authorization = CreateAuthorization(path, httpMethod, DateTime.Now, DateTime.Now.Add(expiredTimeSpan.Value)),
+            });
         }
     }
 }
