@@ -18,5 +18,10 @@ namespace EnigmaNet.AspNet.Extensions
 
             return userAgent.Contains("MicroMessenger");
         }
+
+        public static string GetRequestUrl(this HttpRequest source)
+        {
+            return $"{source.PathBase}{source.Path}{source.QueryString}";
+        }
     }
 }
