@@ -139,14 +139,90 @@ namespace EnigmaNet.QCloud.Cos.Impl
         public string Region { get; set; }
         public ILoggerFactory LoggerFactory { get; set; }
 
-        public Task CopyObjectAsync(string sourcePath, string targetPath)
+        public async Task CopyObjectAsync(string sourcePath, string targetPath)
         {
-            throw new NotImplementedException();
+            if (string.IsNullOrEmpty(sourcePath))
+            {
+                throw new ArgumentNullException(nameof(sourcePath));
+            }
+
+            if (!sourcePath.StartsWith("/"))
+            {
+                throw new ArgumentException($"SourcePath is not start with /", nameof(sourcePath));
+            }
+
+            if (string.IsNullOrEmpty(targetPath))
+            {
+                throw new ArgumentNullException(nameof(targetPath));
+            }
+
+            if (!targetPath.StartsWith("/"))
+            {
+                throw new ArgumentException($"TargetPath is not start with /", nameof(targetPath));
+            }
+
+            if (sourcePath ==targetPath)
+            {
+                throw new ArgumentException($"targetPath == sourcePath");
+            }
+
+            var host = GetCosHost();
+            var path = targetPath;
+            var authorization = CreateAuthorization(path, HttpMethod.Put, DateTime.Now, DateTime.Now.AddMinutes(CosApiValidMinutes));
+            var url = $"https://{host}{path}";
+
+            Logger.LogDebug($"prepare to copy object,url:{url} source:{sourcePath}");
+
+            var request = WebRequest.Create(url);
+            {
+                request.Headers.Add("Authorization", authorization);
+                request.Headers.Add("x-cos-copy-source", $"{host}{sourcePath}");
+                request.Method = "PUT";
+
+                var response = (HttpWebResponse)await request.GetResponseAsync();
+                if (!response.StatusCode.ToString("D").StartsWith("2"))
+                {
+                    var errorContent = await response.ReadAsStringAsync();
+
+                    Logger.LogError($"copy object fail,url:{url} source:{sourcePath} response:{response.StatusCode} {errorContent}");
+
+                    throw new BizException("复制云文件出错");
+                }
+            }
         }
 
-        public Task DeleteObjectAsync(string path)
+        public async Task DeleteObjectAsync(string path)
         {
-            throw new NotImplementedException();
+            if (string.IsNullOrEmpty(path))
+            {
+                throw new ArgumentNullException(nameof(path));
+            }
+
+            if (!path.StartsWith("/"))
+            {
+                throw new ArgumentException($"path is not start with /", nameof(path));
+            }
+
+            var host = GetCosHost();
+            var authorization = CreateAuthorization(path, HttpMethod.Delete, DateTime.Now, DateTime.Now.AddMinutes(CosApiValidMinutes));
+            var url = $"https://{host}{path}";
+
+            Logger.LogDebug($"prepare to delete object:{url}");
+
+            var request = WebRequest.Create(url);
+            {
+                request.Headers.Add("Authorization", authorization);
+                request.Method = "DELETE";
+                var response = (HttpWebResponse)await request.GetResponseAsync();
+                if (!response.StatusCode.ToString("D").StartsWith("2"))
+                {
+                    var errorContent = await response.ReadAsStringAsync();
+
+                    Logger.LogError($"delete object fail,url:{url} response:{response.StatusCode} {errorContent}");
+
+                    throw new BizException("删除云文件出错");
+                }
+            }
         }
 
         public string GetObjectAccessUrl(string path)

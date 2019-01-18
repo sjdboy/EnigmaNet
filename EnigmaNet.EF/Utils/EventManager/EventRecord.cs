@@ -8,8 +8,6 @@ namespace EnigmaNet.EF.Utils.EventManager
     {
         public byte[] RowVer { get; set; }
         public long Id { get; set; }
-        [Obsolete("请用EventObjectJson")]
-        public byte[] EventObjectBytes { get; set; }
         public string EventObjectJson { get; set; }
         public bool Processed { get; set; }
         public int ErrorTimes { get; set; }
