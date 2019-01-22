@@ -313,7 +313,7 @@ namespace EnigmaNet.RabbitMQBus
                         continue;
                     }
 
-                    logger.LogInformation( $"handler init,create rabbitmq object completed, handlerType:{handlerType}");
+                    logger.LogInformation($"handler init,create rabbitmq object completed, handlerType:{handlerType}");
                     break;
                 }
             }
@@ -337,9 +337,31 @@ namespace EnigmaNet.RabbitMQBus
             }
         }
 
+        string GetFailMessageFolderPath()
+        {
+            string folderPath;
+            if (Path.IsPathRooted(Options.Value.FailMessageStoreFolder))
+            {
+                folderPath = Options.Value.FailMessageStoreFolder;
+            }
+            else
+            {
+                folderPath = Path.Combine(System.AppContext.BaseDirectory, Options.Value.FailMessageStoreFolder);
+            }
+
+            return folderPath;
+        }
+
         void SaveMessageToLocal(string eventId, string messageString)
         {
-            var filePath = Path.Combine(Options.Value.FailMessageStoreFolder, $"{eventId}.json");
+            var folderPath = GetFailMessageFolderPath();
+            if (!Directory.Exists(folderPath))
+            {
+                Directory.CreateDirectory(folderPath);
+            }
+
+            var filePath = Path.Combine(folderPath, $"{eventId}.json");
+
             File.WriteAllText(filePath, messageString, Encoding.UTF8);
 
             var logger = GetLogger(LoggerSubCategories.SaveMessageToLocal);
@@ -351,9 +373,15 @@ namespace EnigmaNet.RabbitMQBus
 
         void LocalMessageSendHandlerOnceHandler()
         {
-            var logger = GetLogger(LoggerSubCategories.LocalMessageSendHandler);
+            var folderPath = GetFailMessageFolderPath();
+            if (!Directory.Exists(folderPath))
+            {
+                Directory.CreateDirectory(folderPath);
+            }
 
-            var files = new DirectoryInfo(Options.Value.FailMessageStoreFolder).GetFiles()?.OrderBy(m => m.CreationTime).ToList();
+            var files = new DirectoryInfo(folderPath).GetFiles()?.OrderBy(m => m.CreationTime).ToList();
+
+            var logger = GetLogger(LoggerSubCategories.LocalMessageSendHandler);
 
             if (!(files?.Count > 0))
             {
