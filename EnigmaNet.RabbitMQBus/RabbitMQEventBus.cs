@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
 using System.Linq;
+using System.IO;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -20,13 +21,25 @@ namespace EnigmaNet.RabbitMQBus
     {
         #region private
 
+        #region class
+
+        class LoggerSubCategories
+        {
+            public const string Init = "Init";
+            public const string SaveMessageToLocal = "SaveMessageToLocal";
+            public const string LocalMessageSendHandler = "LocalMessageSendHandler";
+        }
+
+        #endregion
+
         #region fields
 
         const string ExchangeTypeFanout = "fanout";
-        const int RabbitMQCreateMaxTryTimes = 10;
         const int ErrorWaitTime = 1000 * 2;
         const int EmptyWaitMilliSeconds = 1000 * 2;
         const int FailTTL = 1000 * 10;
+
+        const int LocalMessageOnceHandlerWaitMilliSencods = 1000 * 60;
 
         ConcurrentDictionary<Type, ConcurrentBag<Type>> _handlerToEvents = new ConcurrentDictionary<Type, ConcurrentBag<Type>>();
         ConcurrentDictionary<Type, object> _handlers = new ConcurrentDictionary<Type, object>();
@@ -87,12 +100,17 @@ namespace EnigmaNet.RabbitMQBus
 
         ILogger GetInitLogger()
         {
-            return LoggerFactory.CreateLogger("EnigmaNet.RabbitMQBus.RabbitMQEventBus_Init");
+            return GetLogger(LoggerSubCategories.Init);
         }
 
         ILogger GetLogger()
         {
             return LoggerFactory.CreateLogger<RabbitMQEventBus>();
+        }
+
+        ILogger GetLogger(string subCategory)
+        {
+            return LoggerFactory.CreateLogger($"EnigmaNet.RabbitMQBus.RabbitMQEventBus_{subCategory}");
         }
 
         string GetExchangeName(Type eventType)
@@ -227,21 +245,23 @@ namespace EnigmaNet.RabbitMQBus
         void StartHandler(object handler)
         {
             var handlerType = handler.GetType();
-            var queueName = GetQueueName(handlerType);
 
-            //create rabbit object
+            //handler init
             {
-                var initLogger = GetInitLogger();
+                var queueName = GetQueueName(handlerType);
 
-                initLogger.LogInformation($"StartHandler,handlerType:{handlerType}");
+                var logger = GetInitLogger();
+
+                logger.LogInformation($"handler init, handlerType:{handlerType}");
 
                 _handlerToEvents.TryGetValue(handlerType, out ConcurrentBag<Type> eventTypes);
 
-                var tryTimes = 0;
                 while (true)
                 {
                     try
                     {
+                        logger.LogInformation($"handler init,beging create rabbitmq object, handlerType:{handlerType}");
+
                         using (var channel = GetConnection().CreateModel())
                         {
                             //create queue(for handler)
@@ -259,10 +279,10 @@ namespace EnigmaNet.RabbitMQBus
                                 failQueueParameters.Add(Utils.QueueArguments.MessageTTL, FailTTL);
 
                                 channel.QueueDeclare(queueName, true, false, false, queueParameters);
-                                initLogger.LogDebug($"create queue finish,queueName:{queueName}");
+                                logger.LogDebug($"handler init,create queue finish,queueName:{queueName}, handlerType:{handlerType}");
 
                                 channel.QueueDeclare(failQueueName, true, false, false, failQueueParameters);
-                                initLogger.LogDebug($"create fail queue finish,failQueueName:{failQueueName}");
+                                logger.LogDebug($"handler init,create fail queue finish,failQueueName:{failQueueName}, handlerType:{handlerType}");
 
                                 _buildedQueues.TryAdd(handlerType, true);
                             }
@@ -274,42 +294,34 @@ namespace EnigmaNet.RabbitMQBus
                                 if (!_buildedExchanges.ContainsKey(eventType))
                                 {
                                     channel.ExchangeDeclare(exchangeName, ExchangeTypeFanout, true, false);
-                                    initLogger.LogDebug($"create exchange finish,exchangeName:{exchangeName}");
+                                    logger.LogDebug($"handler init,create exchange finish,exchangeName:{exchangeName}");
 
                                     _buildedExchanges.TryAdd(eventType, true);
                                 }
 
                                 //subscribe
                                 channel.QueueBind(queueName, exchangeName, string.Empty);
-                                initLogger.LogDebug($"bind queue finish,queueName:{queueName} exchangeName:{exchangeName}");
+                                logger.LogDebug($"handler init,bind queue finish,queueName:{queueName} exchangeName:{exchangeName}");
                             }
                         }
                     }
                     catch (Exception ex)
                     {
-                        tryTimes++;
-                        initLogger.LogError(ex, $"StartHandler,create rabbitmq object error");
+                        logger.LogError(ex, $"handler init,create rabbitmq object error, handlerType:{handlerType}");
+                        Thread.CurrentThread.Join(ErrorWaitTime);
 
-                        if (tryTimes > RabbitMQCreateMaxTryTimes)
-                        {
-                            initLogger.LogInformation($"try create rabbitmq more time,and out");
-                            break;
-                        }
-                        else
-                        {
-                            Thread.CurrentThread.Join(ErrorWaitTime);
-                            continue;
-                        }
+                        continue;
                     }
 
+                    logger.LogInformation( $"handler init,create rabbitmq object completed, handlerType:{handlerType}");
                     break;
                 }
             }
 
             //handle message
-            var logger = GetLogger();
             while (true)
             {
+                var logger = GetLogger();
                 try
                 {
                     using (var channel = GetConnection().CreateModel())
@@ -319,7 +331,87 @@ namespace EnigmaNet.RabbitMQBus
                 }
                 catch (Exception ex)
                 {
-                    logger.LogError(ex, $"handle error");
+                    logger.LogError(ex, $"handle error, handlerType:{handlerType}");
+                    Thread.CurrentThread.Join(ErrorWaitTime);
+                }
+            }
+        }
+
+        void SaveMessageToLocal(string eventId, string messageString)
+        {
+            var filePath = Path.Combine(Options.Value.FailMessageStoreFolder, $"{eventId}.json");
+            File.WriteAllText(filePath, messageString, Encoding.UTF8);
+
+            var logger = GetLogger(LoggerSubCategories.SaveMessageToLocal);
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation($"SaveMessageToLocal,filePath:{filePath} messageString:{messageString}");
+            }
+        }
+
+        void LocalMessageSendHandlerOnceHandler()
+        {
+            var logger = GetLogger(LoggerSubCategories.LocalMessageSendHandler);
+
+            var files = new DirectoryInfo(Options.Value.FailMessageStoreFolder).GetFiles()?.OrderBy(m => m.CreationTime).ToList();
+
+            if (!(files?.Count > 0))
+            {
+                logger.LogInformation("get local messages, empty");
+                return;
+            }
+
+            logger.LogInformation($"get local messages, count:{files.Count}");
+
+            foreach (var file in files)
+            {
+                var messageString = File.ReadAllText(file.FullName, Encoding.UTF8);
+
+                var @event = (Event)JsonConvert.DeserializeObject(messageString, new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All });
+
+                try
+                {
+                    var eventType = @event.GetType();
+
+                    CreateExchangeIfNot(eventType);
+
+                    using (var channel = GetConnection().CreateModel())
+                    {
+                        var properties = CreateProperties(channel);
+                        var exchangeName = GetExchangeName(eventType);
+                        channel.BasicPublish(exchangeName, string.Empty, properties, Encoding.UTF8.GetBytes(messageString));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, $"send message error,skip,eventId:{@event.EventId}");
+                    Thread.CurrentThread.Join(ErrorWaitTime);
+                    continue;
+                }
+
+                logger.LogInformation($"send local message complete,eventId:{@event.EventId}");
+
+                File.Delete(file.FullName);
+
+                logger.LogInformation($"delete local message file complete,eventId:{@event.EventId}");
+            }
+        }
+
+        void LocalMessageSendHandler()
+        {
+            var logger = GetLogger(LoggerSubCategories.LocalMessageSendHandler);
+
+            while (true)
+            {
+                Thread.CurrentThread.Join(LocalMessageOnceHandlerWaitMilliSencods);
+
+                try
+                {
+                    LocalMessageSendHandlerOnceHandler();
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "once handler error");
                     Thread.CurrentThread.Join(ErrorWaitTime);
                 }
             }
@@ -341,22 +433,41 @@ namespace EnigmaNet.RabbitMQBus
 
             var eventType = @event.GetType();
 
-            CreateExchangeIfNot(eventType);
-
             var exchangeName = GetExchangeName(eventType);
 
-            var messageBody = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(@event, new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All, }));
+            var messageString = JsonConvert.SerializeObject(@event, new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All, });
 
             if (logger.IsEnabled(LogLevel.Debug))
             {
-                logger.LogDebug($"PublishAsync,prev send, exchangeName:{exchangeName}");
+                logger.LogDebug($"Publish event,prev send, exchangeName:{exchangeName} messageString:{messageString}");
             }
 
-            using (var channel = GetConnection().CreateModel())
+            try
             {
-                var properties = CreateProperties(channel);
+                CreateExchangeIfNot(eventType);
 
-                channel.BasicPublish(exchangeName, string.Empty, properties, messageBody);
+                using (var channel = GetConnection().CreateModel())
+                {
+                    var properties = CreateProperties(channel);
+
+                    channel.BasicPublish(exchangeName, string.Empty, properties, Encoding.UTF8.GetBytes(messageString));
+                }
+
+                if (logger.IsEnabled(LogLevel.Debug))
+                {
+                    logger.LogDebug($"PublishAsync,send completed");
+                }
+            }
+            catch (Exception ex)
+            {
+                if (string.IsNullOrEmpty(Options.Value.FailMessageStoreFolder))
+                {
+                    throw;
+                }
+
+                logger.LogError(ex, $"send message error,save message to local,messageId:{@event.EventId}");
+
+                SaveMessageToLocal(@event.EventId, messageString);
             }
 
             return Task.CompletedTask;
@@ -369,7 +480,7 @@ namespace EnigmaNet.RabbitMQBus
             var eventType = typeof(T);
             var handlerType = handler.GetType();
 
-            logger.LogDebug($"SubscribeAsync,eventType:{eventType} handlerType:{handlerType}");
+            logger.LogDebug($"Subscribe,eventType:{eventType} handlerType:{handlerType}");
 
             if (!_handlerToEvents.ContainsKey(handlerType))
             {
@@ -396,12 +507,23 @@ namespace EnigmaNet.RabbitMQBus
 
         public void Init()
         {
+            //start bus handler
             foreach (var item in _handlers)
             {
                 var handler = item.Value;
                 var thread = new Thread(new ParameterizedThreadStart(StartHandler));
                 thread.IsBackground = true;
                 thread.Start(handler);
+            }
+
+            if (!string.IsNullOrEmpty(Options.Value.FailMessageStoreFolder))
+            {
+                //start LocalMessageSendHandler
+                {
+                    var thread = new Thread(new ThreadStart(LocalMessageSendHandler));
+                    thread.IsBackground = true;
+                    thread.Start();
+                }
             }
         }
 
