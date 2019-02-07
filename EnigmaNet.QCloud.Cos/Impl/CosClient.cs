@@ -125,6 +125,12 @@ namespace EnigmaNet.QCloud.Cos.Impl
             return $"{Bucket}-{AppId}.file.myqcloud.com";
         }
 
+        string GetImageCDNHost()
+        {
+            //ny01-1253908385.image.myqcloud.com
+            return $"{Bucket}-{AppId}.image.myqcloud.com";
+        }
+
         string GetCosHost()
         {
             //ny01-1253908385.cos.ap-shanghai.myqcloud.com
@@ -140,7 +146,54 @@ namespace EnigmaNet.QCloud.Cos.Impl
 
         public Task CopyObjectAsync(string sourcePath, string targetPath)
         {
-            throw new NotImplementedException();
+            if (string.IsNullOrEmpty(sourcePath))
+            {
+                throw new ArgumentNullException(nameof(sourcePath));
+            }
+
+            if (!sourcePath.StartsWith("/"))
+            {
+                throw new ArgumentException($"SourcePath is not start with /", nameof(sourcePath));
+            }
+
+            if (string.IsNullOrEmpty(targetPath))
+            {
+                throw new ArgumentNullException(nameof(targetPath));
+            }
+
+            if (!targetPath.StartsWith("/"))
+            {
+                throw new ArgumentException($"TargetPath is not start with /", nameof(targetPath));
+            }
+
+            if (sourcePath == targetPath)
+            {
+                throw new ArgumentException($"targetPath == sourcePath");
+            }
+
+            var host = GetCosHost();
+            var path = targetPath;
+            var authorization = CreateAuthorization(path, HttpMethod.Put, DateTime.Now, DateTime.Now.AddMinutes(CosApiValidMinutes));
+            var url = $"https://{host}{path}";
+
+            Logger.LogDebug($"prepare to copy object,url:{url} source:{sourcePath}");
+
+            var request = WebRequest.Create(url);
+            {
+                request.Headers.Add("Authorization", authorization);
+                request.Headers.Add("x-cos-copy-source", $"{host}{sourcePath}");
+                request.Method = "PUT";
+
+                var response = (HttpWebResponse)await request.GetResponseAsync();
+                if (!response.StatusCode.ToString("D").StartsWith("2"))
+                {
+                    var errorContent = await response.ReadAsStringAsync();
+
+                    Logger.LogError($"copy object fail,url:{url} source:{sourcePath} response:{response.StatusCode} {errorContent}");
+
+                    throw new BizException("复制云文件出错");
+                }
+            }
         }
 
         public Task DeleteObjectAsync(string path)
@@ -150,40 +203,15 @@ namespace EnigmaNet.QCloud.Cos.Impl
 
         public string GetObjectAccessUrl(string path)
         {
-            if (string.IsNullOrEmpty(path))
-            {
-                throw new ArgumentNullException(nameof(path));
-            }
-
-            if (!path.StartsWith("/"))
-            {
-                throw new ArgumentException($"path is not start with /", nameof(path));
-            }
-
-            var host = GetCosHost();
-
-            return $"https://{host}{path}";
+            return GetObjectAccessUrl(LineType.Cos, path);
         }
 
         public string GetObjectAccessUrlWithAuthorization(string path, TimeSpan? expiredTimeSpan)
         {
-            if (string.IsNullOrEmpty(path))
-            {
-                throw new ArgumentNullException(nameof(path));
-            }
-
-            if (!path.StartsWith("/"))
-            {
-                throw new ArgumentException($"path is not start with /", nameof(path));
-            }
-
-            var host = GetCosHost();
-            var timeSpan = expiredTimeSpan ?? TimeSpan.FromSeconds(DefaultExpiredSeconds);
-            var authorization = CreateAuthorization(path, HttpMethod.Get, DateTime.Now, DateTime.Now.Add(timeSpan));
-            return $"https://{host}{path}?{authorization}";
+            return GetObjectAccessUrlWithAuthorization(LineType.Cos, path, expiredTimeSpan);
         }
 
-        public string GetObjectCDNAccessUrl(string path)
+        public string GetObjectAccessUrl(LineType lineType, string path)
         {
             if (string.IsNullOrEmpty(path))
             {
@@ -195,12 +223,27 @@ namespace EnigmaNet.QCloud.Cos.Impl
                 throw new ArgumentException($"path is not start with /", nameof(path));
             }
 
-            var host = GetCDNHost();
+            string host;
+
+            switch (lineType)
+            {
+                case LineType.Cos:
+                    host = GetCosHost();
+                    break;
+                case LineType.CDN:
+                    host = GetCDNHost();
+                    break;
+                case LineType.ImageCDN:
+                    host = GetImageCDNHost();
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(lineType));
+            }
 
             return $"https://{host}{path}";
         }
 
-        public string GetObjectCDNAccessUrlWithAuthorization(string path, TimeSpan? expiredTimeSpan)
+        public string GetObjectAccessUrlWithAuthorization(LineType lineType, string path, TimeSpan? expiredTimeSpan)
         {
             if (string.IsNullOrEmpty(path))
             {
@@ -212,7 +255,22 @@ namespace EnigmaNet.QCloud.Cos.Impl
                 throw new ArgumentException($"path is not start with /", nameof(path));
             }
 
-            var host = GetCDNHost();
+            string host;
+            switch (lineType)
+            {
+                case LineType.Cos:
+                    host = GetCosHost();
+                    break;
+                case LineType.CDN:
+                    host = GetCDNHost();
+                    break;
+                case LineType.ImageCDN:
+                    host = GetImageCDNHost();
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(lineType));
+            }
+
             var timeSpan = expiredTimeSpan ?? TimeSpan.FromSeconds(DefaultExpiredSeconds);
             var authorization = CreateAuthorization(path, HttpMethod.Get, DateTime.Now, DateTime.Now.Add(timeSpan));
             return $"https://{host}{path}?{authorization}";
@@ -325,6 +383,33 @@ namespace EnigmaNet.QCloud.Cos.Impl
                     throw new BizException("上传文件出错");
                 }
             }
+        }
+
+        public Task<UploadInfoModel> GetObjectUploadInfo(HttpMethod httpMethod, string path, TimeSpan? expiredTimeSpan = null)
+        {
+            if (string.IsNullOrEmpty(path))
+            {
+                throw new ArgumentNullException(nameof(path));
+            }
+
+            if (!path.StartsWith("/"))
+            {
+                throw new ArgumentException($"path is not start with /", nameof(path));
+            }
+
+            if (!expiredTimeSpan.HasValue)
+            {
+                expiredTimeSpan = TimeSpan.FromMinutes(CosApiValidMinutes);
+            }
+
+            return Task.FromResult(new UploadInfoModel
+            {
+                Bucket = Bucket,
+                AppId = AppId,
+                Region = Region,
+                UploadUrl = $"https://{GetCosHost()}{path}",
+                Authorization = CreateAuthorization(path, httpMethod, DateTime.Now, DateTime.Now.Add(expiredTimeSpan.Value)),
+            });
         }
     }
 }

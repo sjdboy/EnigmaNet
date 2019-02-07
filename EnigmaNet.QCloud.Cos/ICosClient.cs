@@ -6,9 +6,9 @@ namespace EnigmaNet.QCloud.Cos
     public interface ICosClient
     {
         string GetObjectAccessUrl(string path);
+        string GetObjectAccessUrl(LineType lineType, string path);
         string GetObjectAccessUrlWithAuthorization(string path, TimeSpan? expiredTimeSpan);
-        string GetObjectCDNAccessUrl(string path);
-        string GetObjectCDNAccessUrlWithAuthorization(string path, TimeSpan? expiredTimeSpan);
+        string GetObjectAccessUrlWithAuthorization(LineType lineType, string path, TimeSpan? expiredTimeSpan);
         void GetObjectUploadInfo(string path, out string putUrl, out string authorization);
 
         Task DeleteObjectAsync(string path);
