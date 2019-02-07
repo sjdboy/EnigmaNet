@@ -71,26 +71,10 @@ namespace EnigmaNet.EF.Utils.EventManager
                         bool sendOk;
                         try
                         {
-                            Event @event;
-
-                            if (record.EventObjectBytes != null)
+                            var @event = (Event)Newtonsoft.Json.JsonConvert.DeserializeObject(record.EventObjectJson, new Newtonsoft.Json.JsonSerializerSettings
                             {
-                                using (var memoryStream = new MemoryStream(record.EventObjectBytes))
-                                {
-                                    @event = (Event)new BinaryFormatter().Deserialize(memoryStream);
-                                }
-                            }
-                            else if (record.EventObjectJson != null)
-                            {
-                                @event = (Event)Newtonsoft.Json.JsonConvert.DeserializeObject(record.EventObjectJson, new Newtonsoft.Json.JsonSerializerSettings
-                                {
-                                    TypeNameHandling = Newtonsoft.Json.TypeNameHandling.All,
-                                });
-                            }
-                            else
-                            {
-                                throw new Exception($"EventObjectBytes and EventObjectJson is null,recordId:{record.Id}");
-                            }
+                                TypeNameHandling = Newtonsoft.Json.TypeNameHandling.All,
+                            });
 
                             Logger.LogInformation($"deserialize event,record:{record.Id} type:{@event.GetType()} data:{Newtonsoft.Json.JsonConvert.SerializeObject(@event)}");
 

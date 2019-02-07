@@ -13,7 +13,6 @@ namespace EnigmaNet.EF.Utils.EventManager
             builder.ToTable("_EventRecord").HasKey(m => m.Id);
             builder.Property(m => m.RowVer).IsRowVersion();
             builder.Property(m => m.Id).ValueGeneratedNever();
-            builder.Property(m => m.EventObjectBytes);
             builder.Property(m => m.EventObjectJson);
             builder.Property(m => m.Processed);
             builder.Property(m => m.DateTime);
