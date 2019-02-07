@@ -1,5 +1,6 @@
 ﻿using EnigmaNet.Exceptions;
 using EnigmaNet.Extensions;
+using EnigmaNet.QCloud.Cos.Models;
 using EnigmaNet.Utils;
 using Microsoft.Extensions.Logging;
 using System;
@@ -133,7 +134,7 @@ namespace EnigmaNet.QCloud.Cos.Impl
 
         string GetCosHost()
         {
-            //ny01-1253908385.cos.ap-shanghai.myqcloud.com
+            // ny01-1253908385.cos.ap-shanghai.myqcloud.com
             return $"{Bucket}-{AppId}.cos.{Region}.myqcloud.com";
         }
 
@@ -144,7 +145,7 @@ namespace EnigmaNet.QCloud.Cos.Impl
         public string Region { get; set; }
         public ILoggerFactory LoggerFactory { get; set; }
 
-        public Task CopyObjectAsync(string sourcePath, string targetPath)
+        public async Task CopyObjectAsync(string sourcePath, string targetPath)
         {
             if (string.IsNullOrEmpty(sourcePath))
             {
@@ -196,9 +197,38 @@ namespace EnigmaNet.QCloud.Cos.Impl
             }
         }
 
-        public Task DeleteObjectAsync(string path)
+        public async Task DeleteObjectAsync(string path)
         {
-            throw new NotImplementedException();
+            if (string.IsNullOrEmpty(path))
+            {
+                throw new ArgumentNullException(nameof(path));
+            }
+
+            if (!path.StartsWith("/"))
+            {
+                throw new ArgumentException($"path is not start with /", nameof(path));
+            }
+
+            var host = GetCosHost();
+            var authorization = CreateAuthorization(path, HttpMethod.Delete, DateTime.Now, DateTime.Now.AddMinutes(CosApiValidMinutes));
+            var url = $"https://{host}{path}";
+
+            Logger.LogDebug($"prepare to delete object:{url}");
+
+            var request = WebRequest.Create(url);
+            {
+                request.Headers.Add("Authorization", authorization);
+                request.Method = "DELETE";
+                var response = (HttpWebResponse)await request.GetResponseAsync();
+                if (!response.StatusCode.ToString("D").StartsWith("2"))
+                {
+                    var errorContent = await response.ReadAsStringAsync();
+
+                    Logger.LogError($"delete object fail,url:{url} response:{response.StatusCode} {errorContent}");
+
+                    throw new BizException("删除云文件出错");
+                }
+            }
         }
 
         public string GetObjectAccessUrl(string path)
@@ -274,23 +304,6 @@ namespace EnigmaNet.QCloud.Cos.Impl
             var timeSpan = expiredTimeSpan ?? TimeSpan.FromSeconds(DefaultExpiredSeconds);
             var authorization = CreateAuthorization(path, HttpMethod.Get, DateTime.Now, DateTime.Now.Add(timeSpan));
             return $"https://{host}{path}?{authorization}";
-        }
-
-        public void GetObjectUploadInfo(string path, out string putUrl, out string authorization)
-        {
-            if (string.IsNullOrEmpty(path))
-            {
-                throw new ArgumentNullException(nameof(path));
-            }
-
-            if (!path.StartsWith("/"))
-            {
-                throw new ArgumentException($"path is not start with /", nameof(path));
-            }
-
-            var host = GetCosHost();
-            authorization = CreateAuthorization(path, HttpMethod.Put, DateTime.Now, DateTime.Now.AddMinutes(CosApiValidMinutes));
-            putUrl = $"https://{host}{path}";
         }
 
         public async Task<long> GetObjectContentLengthAsync(string path)

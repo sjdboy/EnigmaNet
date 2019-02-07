@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
+using System.Net.Http;
+using EnigmaNet.QCloud.Cos.Models;
 
 namespace EnigmaNet.QCloud.Cos
 {
@@ -9,7 +11,7 @@ namespace EnigmaNet.QCloud.Cos
         string GetObjectAccessUrl(LineType lineType, string path);
         string GetObjectAccessUrlWithAuthorization(string path, TimeSpan? expiredTimeSpan);
         string GetObjectAccessUrlWithAuthorization(LineType lineType, string path, TimeSpan? expiredTimeSpan);
-        void GetObjectUploadInfo(string path, out string putUrl, out string authorization);
+        Task<UploadInfoModel> GetObjectUploadInfo(HttpMethod httpMethod, string path, TimeSpan? expiredTimeSpan = null);
 
         Task DeleteObjectAsync(string path);
 
