@@ -16,12 +16,30 @@ namespace EnigmaNet.AspNet.Extensions
         {
             var userAgent = httpRequest.GetUserAgent();
 
-            return userAgent.Contains("MicroMessenger");
+            return userAgent.Contains("MicroMessenger")
+                && !userAgent.Contains("wxwork") //非企业微信
+                ;
         }
 
-        public static string GetRequestUrl(this HttpRequest source)
+        public static bool IsWxWork(this HttpRequest httpRequest)
         {
-            return $"{source.PathBase}{source.Path}{source.QueryString}";
+            var userAgent = httpRequest.GetUserAgent();
+
+            return userAgent.Contains("wxwork");
+        }
+
+        public static string GetRequestUrl(this HttpRequest source, bool withHost = false)
+        {
+            var path = $"{source.PathBase}{source.Path}{source.QueryString}";
+
+            if (withHost)
+            {
+                return $"{(source.IsHttps ? "https" : "http")}://{source.Host}" + path;
+            }
+            else
+            {
+                return path;
+            }
         }
     }
 }

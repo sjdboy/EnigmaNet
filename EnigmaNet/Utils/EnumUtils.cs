@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.Reflection;
 using System.Text;
 
@@ -10,19 +11,19 @@ namespace EnigmaNet.Utils
     {
         internal static string GetEnumFieldDisplayName(FieldInfo field)
         {
-            //var objs = field.GetCustomAttributes(typeof(DisplayAttribute), false);
-            //if (objs != null && objs.Length > 0)
-            //{
-            //    return ((DisplayAttribute)objs[0]).Name;
-            //}
-            //else
-            //{
-            var objs2 = field.GetCustomAttributes(typeof(DescriptionAttribute), false);
-            if (objs2 != null && objs2.Length > 0)
+            var objs = field.GetCustomAttributes(typeof(DisplayAttribute), false);
+            if (objs != null && objs.Length > 0)
             {
-                return ((DescriptionAttribute)objs2[0]).Description;
+                return ((DisplayAttribute)objs[0]).Name;
             }
-            //}
+            else
+            {
+                var objs2 = field.GetCustomAttributes(typeof(DescriptionAttribute), false);
+                if (objs2 != null && objs2.Length > 0)
+                {
+                    return ((DescriptionAttribute)objs2[0]).Description;
+                }
+            }
             return field.Name;
         }
 
