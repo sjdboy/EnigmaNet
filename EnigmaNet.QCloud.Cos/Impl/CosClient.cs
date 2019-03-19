@@ -377,10 +377,14 @@ namespace EnigmaNet.QCloud.Cos.Impl
                 var bufferSize = UploadBufferSize;
                 for (var i = 0; i < fileContent.Length; i += bufferSize)
                 {
-                    var size = fileContent.Length - bufferSize * i;
-                    if (size > bufferSize)
+                    int size;
+                    if ((fileContent.Length - i) > bufferSize)
                     {
                         size = bufferSize;
+                    }
+                    else
+                    {
+                        size = fileContent.Length - i;
                     }
 
                     await requestStream.WriteAsync(fileContent, i, size);
