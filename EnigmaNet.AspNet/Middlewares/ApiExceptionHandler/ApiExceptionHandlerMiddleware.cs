@@ -55,9 +55,9 @@ namespace EnigmaNet.AspNet.Middlewares.ApiExceptionHandler
             {
                 isApi = true;
             }
-            else if (httpContext.Request.Headers.TryGetValue("Content-Type", out StringValues contentTypeValues) &&
-                contentTypeValues.Count > 0 &&
-                contentTypeValues.Any(m => m.Contains("application/json")))
+            else if (httpContext.Request.Headers.TryGetValue("Accept", out StringValues acceptValues) &&
+                acceptValues.Count > 0 &&
+                acceptValues.Any(m => m.Contains("application/json")))
             {
                 isApi = true;
             }
