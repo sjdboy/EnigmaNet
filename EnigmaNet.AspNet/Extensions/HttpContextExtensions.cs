@@ -10,7 +10,9 @@ namespace EnigmaNet.AspNet.Extensions
     {
         public static string GetAreaName(this HttpContext httpContext)
         {
-            if (httpContext.GetRouteData().Values.TryGetValue("area", out object area))
+            var routeValues = httpContext.GetRouteData()?.Values;
+
+            if (routeValues != null && routeValues.TryGetValue("area", out object area))
             {
                 return area.ToString();
             }
