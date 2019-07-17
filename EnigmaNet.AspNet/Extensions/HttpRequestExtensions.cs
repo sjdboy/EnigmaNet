@@ -12,6 +12,18 @@ namespace EnigmaNet.AspNet.Extensions
             return httpRequest.Headers["User-Agent"];
         }
 
+        public static bool IsIPhone(this HttpRequest httpRequest)
+        {
+            var userAgent = httpRequest.GetUserAgent();
+            return userAgent.Contains("iPhone") || userAgent.Contains("iphone");
+        }
+
+        public static bool IsAndroid(this HttpRequest httpRequest)
+        {
+            var userAgent = httpRequest.GetUserAgent();
+            return userAgent.Contains("Android") || userAgent.Contains("android");
+        }
+
         public static bool IsMicroMessager(this HttpRequest httpRequest)
         {
             var userAgent = httpRequest.GetUserAgent();
