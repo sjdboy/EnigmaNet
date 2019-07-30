@@ -33,6 +33,13 @@ namespace EnigmaNet.AspNet.Extensions
                 ;
         }
 
+        public static bool IsMiniProgram(this HttpRequest httpRequest)
+        {
+            var userAgent = httpRequest.GetUserAgent();
+
+            return userAgent.Contains("miniProgram");
+        }
+
         public static bool IsWxWork(this HttpRequest httpRequest)
         {
             var userAgent = httpRequest.GetUserAgent();
