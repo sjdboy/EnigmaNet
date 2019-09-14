@@ -58,6 +58,31 @@ namespace EnigmaNet.Bus
             }
         }
 
+        static void Subscriber(IDelayMessageSubscriber delayMessageSubscriber, object delayMessageHandler)
+        {
+            var handlerTypes = delayMessageHandler.GetType().GetInterfaces()
+                       .Where(m => m.IsGenericType && m.GetGenericTypeDefinition() == typeof(IDelayMessageHandler<>));
+
+            if (handlerTypes != null && handlerTypes.Count() > 0)
+            {
+                var subscribeMethod = typeof(IDelayMessageSubscriber).GetMethod("SubscribeAsync");
+                foreach (var handlerType in handlerTypes)
+                {
+                    var delayMessageType = handlerType.GetGenericArguments();
+                    var task = (Task)subscribeMethod.MakeGenericMethod(delayMessageType).Invoke(delayMessageSubscriber, new object[] { delayMessageHandler });
+                    task.Wait();
+                }
+            }
+        }
+
+        public static void Subscriber(IDelayMessageSubscriber delayMessageSubscriber, params object[] delayMessageHandlers)
+        {
+            foreach (var delayMessageHanlder in delayMessageHandlers)
+            {
+                Subscriber(delayMessageSubscriber, delayMessageHanlder);
+            }
+        }
+
         public static void Subscriber(ICommandSubscriber commandSubscriber, IEventSubscriber eventSubscriber, params object[] handlers)
         {
             foreach (var eventHanlder in handlers)
@@ -68,6 +93,24 @@ namespace EnigmaNet.Bus
             foreach (var commandHandler in handlers)
             {
                 Subscriber(commandSubscriber, commandHandler);
+            }
+        }
+
+        public static void Subscriber(ICommandSubscriber commandSubscriber, IEventSubscriber eventSubscriber, IDelayMessageSubscriber delayMessageSubscriber, params object[] handlers)
+        {
+            foreach (var eventHanlder in handlers)
+            {
+                Subscriber(eventSubscriber, eventHanlder);
+            }
+
+            foreach (var commandHandler in handlers)
+            {
+                Subscriber(commandSubscriber, commandHandler);
+            }
+
+            foreach (var handler in handlers)
+            {
+                Subscriber(delayMessageSubscriber, handler);
             }
         }
 

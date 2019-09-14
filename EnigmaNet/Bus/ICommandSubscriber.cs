@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 
 namespace EnigmaNet.Bus
@@ -14,7 +13,7 @@ namespace EnigmaNet.Bus
         /// 订阅命令
         /// </summary>
         /// <typeparam name="T">命令类型</typeparam>
-        /// <param name="handler">处理程度</param>
+        /// <param name="handler">处理程序</param>
         void Subscribe<T>(ICommandHandler<T> handler) where T : Command;
     }
 }
