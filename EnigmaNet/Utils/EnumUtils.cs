@@ -12,18 +12,23 @@ namespace EnigmaNet.Utils
         internal static string GetEnumFieldDisplayName(FieldInfo field)
         {
             var objs = field.GetCustomAttributes(typeof(DisplayAttribute), false);
-            if (objs != null && objs.Length > 0)
+            if (objs?.Length > 0)
             {
                 return ((DisplayAttribute)objs[0]).Name;
             }
-            else
+
+            var objs2 = field.GetCustomAttributes(typeof(DescriptionAttribute), false);
+            if (objs2?.Length > 0)
             {
-                var objs2 = field.GetCustomAttributes(typeof(DescriptionAttribute), false);
-                if (objs2 != null && objs2.Length > 0)
-                {
-                    return ((DescriptionAttribute)objs2[0]).Description;
-                }
+                return ((DescriptionAttribute)objs2[0]).Description;
             }
+
+            var objs3 = field.GetCustomAttributes(typeof(DisplayNameAttribute), false);
+            if (objs3?.Length > 0)
+            {
+                return ((DisplayNameAttribute)objs3[0]).DisplayName;
+            }
+
             return field.Name;
         }
 
