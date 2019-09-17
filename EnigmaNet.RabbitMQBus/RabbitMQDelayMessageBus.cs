@@ -40,7 +40,7 @@ namespace EnigmaNet.RabbitMQBus
         bool _coreExchangeBuild = false;
 
         string InstanceId { get { return Options.Value.InstanceId; } }
-        string CoreExchangeName { get { return Options.Value.CoreExchangeName; } }
+        string CoreExchangeName { get { return $"{InstanceId}_dm_{Options.Value.CoreExchangeName}"; } }
 
         IConnection _connection;
         object _connectionLocker = new object();
@@ -93,32 +93,17 @@ namespace EnigmaNet.RabbitMQBus
 
         string GetExchangeNameForMessage(Type messageType)
         {
-            if (string.IsNullOrEmpty(InstanceId))
-            {
-                throw new InvalidOperationException("InstanceId is empty");
-            }
-
-            return $"{InstanceId}_{messageType.FullName}";
+            return $"{InstanceId}_dm_{messageType.FullName}";
         }
 
         string GetHandlerQueueName(Type handlerType)
         {
-            if (string.IsNullOrEmpty(InstanceId))
-            {
-                throw new InvalidOperationException("InstanceId is empty");
-            }
-
-            return $"{InstanceId}_{handlerType.FullName}";
+            return $"{InstanceId}_dm_{handlerType.FullName}";
         }
 
         string GetFailQueueName(Type handlerType)
         {
-            if (string.IsNullOrEmpty(InstanceId))
-            {
-                throw new InvalidOperationException("InstanceId is empty");
-            }
-
-            return $"{InstanceId}_{handlerType.FullName}_fail";
+            return $"{InstanceId}_dm_{handlerType.FullName}_fail";
         }
 
         string GetHeaderValueForMessage(Type messageType)
@@ -128,12 +113,7 @@ namespace EnigmaNet.RabbitMQBus
 
         string GetDelayQueueName(int delaySeconds)
         {
-            if (string.IsNullOrEmpty(InstanceId))
-            {
-                throw new InvalidOperationException("InstanceId is empty");
-            }
-
-            return $"{InstanceId}_ts_{delaySeconds}";
+            return $"{InstanceId}_dm_ts_{delaySeconds}";
         }
 
         void HandleMessage(IModel channel, object handler)
@@ -361,7 +341,7 @@ namespace EnigmaNet.RabbitMQBus
             _buildTimeQueues.Add(delaySeconds);
         }
 
-        IBasicProperties CreateProperties(IModel channel)
+        IBasicProperties CreateProperties(IModel channel,Type messageType)
         {
             var properties = channel.CreateBasicProperties();
             properties.Persistent = true;
@@ -369,6 +349,8 @@ namespace EnigmaNet.RabbitMQBus
             properties.Timestamp = new AmqpTimestamp(DateTimeUtils.ToUnixTime2(DateTime.Now));
             properties.ContentType = "application/json";
             properties.ContentEncoding = "utf-8";
+            properties.Headers = new Dictionary<string, object>();
+            properties.Headers.Add(Utils.BindArguments.MessageType, GetHeaderValueForMessage(messageType));
 
             return properties;
         }
@@ -433,6 +415,8 @@ namespace EnigmaNet.RabbitMQBus
 
                 var delayMessage = (DelayMessage)JsonConvert.DeserializeObject(messageString, new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All });
 
+                var messageType = delayMessage.GetType();
+
                 var delaySeconds = delayMessage.DelaySeconds;
 
                 var delayQueueName = GetDelayQueueName(delaySeconds);
@@ -443,7 +427,7 @@ namespace EnigmaNet.RabbitMQBus
                     {
                         CreateDelayQueueIfNot(delaySeconds, channel);
 
-                        channel.BasicPublish(string.Empty, delayQueueName, CreateProperties(channel), Encoding.UTF8.GetBytes(messageString));
+                        channel.BasicPublish(string.Empty, delayQueueName, CreateProperties(channel, messageType), Encoding.UTF8.GetBytes(messageString));
                     }
                 }
                 catch (Exception ex)
@@ -498,6 +482,8 @@ namespace EnigmaNet.RabbitMQBus
 
             var delaySeconds = message.DelaySeconds;
 
+            var messageType = message.GetType();
+
             var queueName = GetDelayQueueName(delaySeconds);
 
             var messageString = JsonConvert.SerializeObject(message, new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All, });
@@ -513,7 +499,7 @@ namespace EnigmaNet.RabbitMQBus
                 {
                     CreateDelayQueueIfNot(delaySeconds, channel);
 
-                    channel.BasicPublish(string.Empty, queueName, CreateProperties(channel), Encoding.UTF8.GetBytes(messageString));
+                    channel.BasicPublish(string.Empty, queueName, CreateProperties(channel, messageType), Encoding.UTF8.GetBytes(messageString));
                 }
 
                 if (logger.IsEnabled(LogLevel.Debug))
