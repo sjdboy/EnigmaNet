@@ -61,6 +61,11 @@ namespace EnigmaNet.Utils
             public const string PARRERN_ID_CARD = @"^(^\d{15}$|^\d{18}$|^\d{17}(\d|X|x))$";
 
             /// <summary>
+            /// 银行卡号
+            /// </summary>
+            public const string BankNumberPattern = @"^([1-9]{1})(\d{14}|\d{18})$";
+
+            /// <summary>
             /// 验证输入是否匹配正则模式
             /// </summary>
             /// <param name="pattern"></param>
@@ -111,6 +116,11 @@ namespace EnigmaNet.Utils
         public static bool IsMobile(string str)
         {
             return RegexUtil.IsMatch(RegexUtil.PATTERN_MOBILE_PHONE, str);
+        }
+
+        public static bool IsBankNumber(string str)
+        {
+            return RegexUtil.IsMatch(RegexUtil.BankNumberPattern, str);
         }
 
         /// <summary>
