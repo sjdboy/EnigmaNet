@@ -6,7 +6,7 @@ namespace EnigmaNet.DouYinOpenApi
 {
     public interface IApiClient
     {
-        Task<string> GetOAuthConnectAsync(string[] scopes,string state);
+        Task<string> GetOAuthConnectAsync(string[] scopes,string state,string redirectUrl);
 
         Task<Models.OAuth.AccessTokenResult> GetOAuthAccessTokenAsync(string code);
 

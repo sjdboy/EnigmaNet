@@ -212,16 +212,16 @@ namespace EnigmaNet.DouYinOpenApi
 
         public string Key { get; set; }
         public string Secret { get; set; }
-        public string ConnectRedirectUrl { get; set; }
+        //public string ConnectRedirectUrl { get; set; }
 
-        public Task<string> GetOAuthConnectAsync(string[] scopes, string state)
+        public Task<string> GetOAuthConnectAsync(string[] scopes, string state,string redirectUrl)
         {
             var url = Api + "/platform/oauth/connect/"
                 .AddQueryParam("client_key", Key)
                 .AddQueryParam("response_type", "code")
                 .AddQueryParam("scope", string.Join(",", scopes))
                 .AddQueryParam("state", state)
-                .AddQueryParam("redirect_uri", ConnectRedirectUrl);
+                .AddQueryParam("redirect_uri", redirectUrl);
 
             return Task.FromResult(url);
         }
