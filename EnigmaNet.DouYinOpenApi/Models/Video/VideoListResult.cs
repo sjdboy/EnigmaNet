@@ -6,7 +6,7 @@ namespace EnigmaNet.DouYinOpenApi.Models.Video
 {
     public class VideoListResult
     {
-        public int Cursor { get; set; }
+        public long Cursor { get; set; }
         public bool HasMore { get; set; }
         public List<VideoItemInfo> List { get; set; }
     }

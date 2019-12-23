@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
+using System.Net.Http;
+using System.Linq;
+using Microsoft.Extensions.Logging;
 
 using EnigmaNet.Extensions;
 using EnigmaNet.DouYinOpenApi.Models;
@@ -10,21 +13,26 @@ using EnigmaNet.DouYinOpenApi.Models.Fans;
 using EnigmaNet.DouYinOpenApi.Models.Following;
 using EnigmaNet.DouYinOpenApi.Models.OAuth;
 using EnigmaNet.DouYinOpenApi.Models.Video;
-using System.Net.Http;
 using EnigmaNet.Utils;
-using System.Linq;
 
 namespace EnigmaNet.DouYinOpenApi
 {
     public class ApiClient : IApiClient
     {
-        class ResultBase
+        #region models
+
+        abstract class DataBase
         {
             public int error_code { get; set; }
             public string description { get; set; }
         }
 
-        class AccessTokenModel : ResultBase
+        class DefaultResultModel<T> where T : DataBase
+        {
+            public T data { get; set; }
+        }
+
+        class AccessTokenModel : DataBase
         {
             public string access_token { get; set; }
             public int expires_in { get; set; }
@@ -33,7 +41,7 @@ namespace EnigmaNet.DouYinOpenApi
             public string scope { get; set; }
         }
 
-        class RefreshTokenModel : ResultBase
+        class RefreshTokenModel : DataBase
         {
             public string access_token { get; set; }
             public int expires_in { get; set; }
@@ -42,13 +50,13 @@ namespace EnigmaNet.DouYinOpenApi
             public string scope { get; set; }
         }
 
-        class ClientTokenModel : ResultBase
+        class ClientTokenModel : DataBase
         {
             public string access_token { get; set; }
             public int expires_in { get; set; }
         }
 
-        class UserInfoModel : ResultBase
+        class UserInfoModel : DataBase
         {
             public string open_id { get; set; }
             public string union_id { get; set; }
@@ -60,7 +68,7 @@ namespace EnigmaNet.DouYinOpenApi
             public int gender { get; set; }
         }
 
-        class FollowingListModel : ResultBase
+        class FollowingListModel : DataBase
         {
             public class Item
             {
@@ -74,12 +82,12 @@ namespace EnigmaNet.DouYinOpenApi
                 public int gender { get; set; }
             }
 
-            public int cursor { get; set; }
+            public long cursor { get; set; }
             public bool has_more { get; set; }
             public List<Item> list { get; set; }
         }
 
-        class FanListModel : ResultBase
+        class FanListModel : DataBase
         {
             public class Item
             {
@@ -93,12 +101,12 @@ namespace EnigmaNet.DouYinOpenApi
                 public int gender { get; set; }
             }
 
-            public int cursor { get; set; }
+            public long cursor { get; set; }
             public bool has_more { get; set; }
             public List<Item> list { get; set; }
         }
 
-        class FanDataModel : ResultBase
+        class FanDataModel : DataBase
         {
             public class Distribution
             {
@@ -150,19 +158,19 @@ namespace EnigmaNet.DouYinOpenApi
             public StatisticsModel statistics { get; set; }
         }
 
-        class VideoListModel : ResultBase
+        class VideoListModel : DataBase
         {
-            public int cursor { get; set; }
+            public long cursor { get; set; }
             public bool has_more { get; set; }
             public List<VideItemModel> list { get; set; }
         }
 
-        class VideoDataModel : ResultBase
+        class VideoDataModel : DataBase
         {
             public List<VideItemModel> list { get; set; }
         }
 
-        class VideoCommentListModel : ResultBase
+        class VideoCommentListModel : DataBase
         {
             public class ItemModel
             {
@@ -175,15 +183,19 @@ namespace EnigmaNet.DouYinOpenApi
                 public int reply_comment_total { get; set; }
             }
 
-            public int cursor { get; set; }
+            public long cursor { get; set; }
             public bool has_more { get; set; }
             public List<ItemModel> list { get; set; }
         }
 
-        class CreateVideoModel : ResultBase
+        class CreateVideoModel : DataBase
         {
             public string item_id { get; set; }
         }
+
+        #endregion
+
+        const string Api = "https://open.douyin.com";
 
         bool? GetGender(int gender)
         {
@@ -200,9 +212,7 @@ namespace EnigmaNet.DouYinOpenApi
             }
         }
 
-        const string Api = "https://open.douyin.com";
-
-        void ThrowExceptionIfError(ResultBase result)
+        void ThrowExceptionIfError(DataBase result)
         {
             if (result.error_code != 0)
             {
@@ -212,9 +222,9 @@ namespace EnigmaNet.DouYinOpenApi
 
         public string Key { get; set; }
         public string Secret { get; set; }
-        //public string ConnectRedirectUrl { get; set; }
+        public ILoggerFactory LoggerFactory { get; set; }
 
-        public Task<string> GetOAuthConnectAsync(string[] scopes, string state,string redirectUrl)
+        public Task<string> GetOAuthConnectAsync(string[] scopes, string state, string redirectUrl)
         {
             var url = Api + "/platform/oauth/connect/"
                 .AddQueryParam("client_key", Key)
@@ -228,28 +238,43 @@ namespace EnigmaNet.DouYinOpenApi
 
         public async Task<AccessTokenResult> GetOAuthAccessTokenAsync(string code)
         {
+            var logger = LoggerFactory.CreateLogger<ApiClient>();
+
             var url = Api + "/oauth/access_token/"
                 .AddQueryParam("client_key", Key)
                 .AddQueryParam("client_secret", Secret)
                 .AddQueryParam("code", code)
                 .AddQueryParam("grant_type", "authorization_code");
 
-            AccessTokenModel result;
+            logger.LogDebug($"GetOAuthAccessTokenAsync,url:{url}");
+
+            DefaultResultModel<AccessTokenModel> result;
             using (var httpClient = new HttpClient())
             {
                 var response = await httpClient.GetAsync(url);
-                result = await response.Content.ReadAsAsync<AccessTokenModel>();
+
+                logger.LogDebug($"GetOAuthAccessTokenAsync,StatusCode:{response.StatusCode}");
+
+                var content = await response.Content.ReadAsStringAsync();
+
+                logger.LogDebug($"GetOAuthAccessTokenAsync,content:{content}");
+
+                result = await response.Content.ReadAsAsync<DefaultResultModel<AccessTokenModel>>();
+
+                logger.LogDebug($"GetOAuthAccessTokenAsync,result:{(result != null ? Newtonsoft.Json.JsonConvert.SerializeObject(result) : "null")}");
             }
 
-            ThrowExceptionIfError(result);
+            var data = result.data;
+
+            ThrowExceptionIfError(data);
 
             return new AccessTokenResult
             {
-                AccessToken = result.access_token,
-                OpenId = result.open_id,
-                ExpiresSeconds = result.expires_in,
-                RefreshToken = result.refresh_token,
-                Scopes = result.scope.Split(",", StringSplitOptions.RemoveEmptyEntries),
+                AccessToken = data.access_token,
+                OpenId = data.open_id,
+                ExpiresSeconds = data.expires_in,
+                RefreshToken = data.refresh_token,
+                Scopes = data?.scope.Split(",", StringSplitOptions.RemoveEmptyEntries),
             };
         }
 
@@ -260,22 +285,24 @@ namespace EnigmaNet.DouYinOpenApi
                 .AddQueryParam("refresh_token ", refreshToken)
                 .AddQueryParam("grant_type", "refresh_token");
 
-            RefreshTokenModel result;
+            DefaultResultModel<RefreshTokenModel> result;
             using (var httpClient = new HttpClient())
             {
                 var response = await httpClient.GetAsync(url);
-                result = await response.Content.ReadAsAsync<RefreshTokenModel>();
+                result = await response.Content.ReadAsAsync<DefaultResultModel<RefreshTokenModel>>();
             }
 
-            ThrowExceptionIfError(result);
+            var data = result.data;
+
+            ThrowExceptionIfError(data);
 
             return new RefreshTokenResult
             {
-                AccessToken = result.access_token,
-                ExpiresSeconds = result.expires_in,
-                OpenId = result.open_id,
-                RefreshToken = result.refresh_token,
-                Scopes = result.scope.Split(",", StringSplitOptions.RemoveEmptyEntries),
+                AccessToken = data.access_token,
+                ExpiresSeconds = data.expires_in,
+                OpenId = data.open_id,
+                RefreshToken = data.refresh_token,
+                Scopes = data?.scope.Split(",", StringSplitOptions.RemoveEmptyEntries),
             };
         }
 
@@ -286,18 +313,19 @@ namespace EnigmaNet.DouYinOpenApi
                 .AddQueryParam("client_secret", Secret)
                 .AddQueryParam("grant_type", "client_credential");
 
-            ClientTokenModel result;
+            DefaultResultModel<ClientTokenModel> result;
             using (var httpClient = new HttpClient())
             {
                 var response = await httpClient.GetAsync(url);
-                result = await response.Content.ReadAsAsync<ClientTokenModel>();
+                result = await response.Content.ReadAsAsync<DefaultResultModel<ClientTokenModel>>();
             }
 
-            ThrowExceptionIfError(result);
+            var data = result.data;
+            ThrowExceptionIfError(data);
             return new ClientTokenResult
             {
-                AccessToken = result.access_token,
-                ExpiresSeconds = result.expires_in,
+                AccessToken = data.access_token,
+                ExpiresSeconds = data.expires_in,
             };
         }
 
@@ -307,51 +335,54 @@ namespace EnigmaNet.DouYinOpenApi
                .AddQueryParam("access_token", accessToken)
                .AddQueryParam("open_id", openId);
 
-            UserInfoModel result;
+            DefaultResultModel<UserInfoModel> result;
             using (var httpClient = new HttpClient())
             {
                 var response = await httpClient.GetAsync(url);
-                result = await response.Content.ReadAsAsync<UserInfoModel>();
+                result = await response.Content.ReadAsAsync<DefaultResultModel<UserInfoModel>>();
             }
 
-            ThrowExceptionIfError(result);
+            var data = result.data;
+
+            ThrowExceptionIfError(data);
 
             return new UserInfo
             {
-                Avatar = result.avatar,
-                City = result.city,
-                Country = result.country,
-                Gender = GetGender(result.gender),
-                NickName = result.nickname,
-                OpenId = result.open_id,
-                Province = result.province,
-                UnionId = result.union_id,
+                Avatar = data.avatar,
+                City = data.city,
+                Country = data.country,
+                Gender = GetGender(data.gender),
+                NickName = data.nickname,
+                OpenId = data.open_id,
+                Province = data.province,
+                UnionId = data.union_id,
             };
         }
 
-        public async Task<FollowingListResult> GetFollowingListAsync(string openId, string accessToken, int pageSize, int? cursor)
+        public async Task<FollowingListResult> GetFollowingListAsync(string openId, string accessToken, int pageSize, long? cursor)
         {
             var url = Api + "​/following/list/"
                .AddQueryParam("access_token", accessToken)
                .AddQueryParam("open_id", openId)
-               .AddQueryParam("cursor", cursor ?? 0)
+               .AddQueryParam("cursor", (cursor ?? 0).ToString())
                .AddQueryParam("count ", pageSize)
                ;
 
-            FollowingListModel result;
+            DefaultResultModel<FollowingListModel> result;
             using (var httpClient = new HttpClient())
             {
                 var response = await httpClient.GetAsync(url);
-                result = await response.Content.ReadAsAsync<FollowingListModel>();
+                result = await response.Content.ReadAsAsync<DefaultResultModel<FollowingListModel>>();
             }
 
-            ThrowExceptionIfError(result);
+            var data = result.data;
+            ThrowExceptionIfError(data);
 
             return new FollowingListResult
             {
-                Cursor = result.cursor,
-                HasMore = result.has_more,
-                List = result.list?.Select(m => new UserInfo
+                Cursor = data.cursor,
+                HasMore = data.has_more,
+                List = data.list?.Select(m => new UserInfo
                 {
                     Avatar = m.avatar,
                     City = m.city,
@@ -365,29 +396,30 @@ namespace EnigmaNet.DouYinOpenApi
             };
         }
 
-        public async Task<FansListResult> GetFansListAsync(string openId, string accessToken, int pageSize, int? cursor)
+        public async Task<FansListResult> GetFansListAsync(string openId, string accessToken, int pageSize, long? cursor)
         {
             var url = Api + "​/fans/list/"
                .AddQueryParam("access_token", accessToken)
                .AddQueryParam("open_id", openId)
-               .AddQueryParam("cursor", cursor ?? 0)
+               .AddQueryParam("cursor",( cursor ?? 0).ToString())
                .AddQueryParam("count ", pageSize)
                ;
 
-            FanListModel result;
+            DefaultResultModel<FanListModel> result;
             using (var httpClient = new HttpClient())
             {
                 var response = await httpClient.GetAsync(url);
-                result = await response.Content.ReadAsAsync<FanListModel>();
+                result = await response.Content.ReadAsAsync<DefaultResultModel<FanListModel>>();
             }
 
-            ThrowExceptionIfError(result);
+            var data = result.data;
+            ThrowExceptionIfError(data);
 
             return new FansListResult
             {
-                Cursor = result.cursor,
-                HasMore = result.has_more,
-                List = result.list?.Select(m => new UserInfo
+                Cursor = data.cursor,
+                HasMore = data.has_more,
+                List = data.list?.Select(m => new UserInfo
                 {
                     Avatar = m.avatar,
                     City = m.city,
@@ -407,27 +439,28 @@ namespace EnigmaNet.DouYinOpenApi
                 .AddQueryParam("access_token", accessToken)
                 .AddQueryParam("open_id", openId);
 
-            FanDataModel result;
+            DefaultResultModel<FanDataModel> result;
             using (var httpClient = new HttpClient())
             {
                 var response = await httpClient.GetAsync(url);
-                result = await response.Content.ReadAsAsync<FanDataModel>();
+                result = await response.Content.ReadAsAsync<DefaultResultModel<FanDataModel>>();
             }
 
-            ThrowExceptionIfError(result);
+            var data = result.data;
+            ThrowExceptionIfError(data);
 
-            var data = result.fans_data;
+            var fansData = data.fans_data;
 
             return new DataResult
             {
-                FansAmount = data.all_fans_num,
-                GenderDistributions = data.gender_distributions?.Select(m => new KeyValuePair<string, int>(m.item, m.value)).ToList(),
-                AgetDistributions = data.age_distributions?.Select(m => new KeyValuePair<string, int>(m.item, m.value)).ToList(),
-                ActiveDaysDistributions = data.active_days_distributions?.Select(m => new KeyValuePair<string, int>(m.item, m.value)).ToList(),
-                DeviceDistributions = data.device_distributions?.Select(m => new KeyValuePair<string, int>(m.item, m.value)).ToList(),
-                GeographicalDistributions = data.geographical_distributions?.Select(m => new KeyValuePair<string, int>(m.item, m.value)).ToList(),
-                InterestDistributions = data.interest_distributions?.Select(m => new KeyValuePair<string, int>(m.item, m.value)).ToList(),
-                FlowContributions = data.flow_contributions?.Select(m => new ContributionModel
+                FansAmount = fansData.all_fans_num,
+                GenderDistributions = fansData.gender_distributions?.Select(m => new KeyValuePair<string, int>(m.item, m.value)).ToList(),
+                AgetDistributions = fansData.age_distributions?.Select(m => new KeyValuePair<string, int>(m.item, m.value)).ToList(),
+                ActiveDaysDistributions = fansData.active_days_distributions?.Select(m => new KeyValuePair<string, int>(m.item, m.value)).ToList(),
+                DeviceDistributions = fansData.device_distributions?.Select(m => new KeyValuePair<string, int>(m.item, m.value)).ToList(),
+                GeographicalDistributions = fansData.geographical_distributions?.Select(m => new KeyValuePair<string, int>(m.item, m.value)).ToList(),
+                InterestDistributions = fansData.interest_distributions?.Select(m => new KeyValuePair<string, int>(m.item, m.value)).ToList(),
+                FlowContributions = fansData.flow_contributions?.Select(m => new ContributionModel
                 {
                     Flow = m.flow,
                     FansSum = m.fans_sum,
@@ -436,28 +469,29 @@ namespace EnigmaNet.DouYinOpenApi
             };
         }
 
-        public async Task<VideoListResult> GetVideoListAsync(string openId, string accessToken, int pageSize, int? cursor)
+        public async Task<VideoListResult> GetVideoListAsync(string openId, string accessToken, int pageSize, long? cursor)
         {
             var url = Api + "/video/list/"
                 .AddQueryParam("access_token", accessToken)
                 .AddQueryParam("open_id", openId)
-                .AddQueryParam("cursor", cursor ?? 0)
+                .AddQueryParam("cursor", (cursor ?? 0).ToString())
                 .AddQueryParam("count", pageSize);
 
-            VideoListModel result;
+            DefaultResultModel<VideoListModel> result;
             using (var httpClient = new HttpClient())
             {
                 var response = await httpClient.GetAsync(url);
-                result = await response.Content.ReadAsAsync<VideoListModel>();
+                result = await response.Content.ReadAsAsync<DefaultResultModel<VideoListModel>>();
             }
 
-            ThrowExceptionIfError(result);
+            var data = result.data;
+            ThrowExceptionIfError(data);
 
             return new VideoListResult
             {
-                Cursor = result.cursor,
-                HasMore = result.has_more,
-                List = result.list?.Select(m => new VideoItemInfo
+                Cursor = data.cursor,
+                HasMore = data.has_more,
+                List = data.list?.Select(m => new VideoItemInfo
                 {
                     ItemId = m.item_id,
                     Cover = m.cover,
@@ -485,7 +519,7 @@ namespace EnigmaNet.DouYinOpenApi
                .AddQueryParam("access_token", accessToken)
                .AddQueryParam("open_id", openId);
 
-            VideoDataModel result;
+            DefaultResultModel<VideoDataModel> result;
             using (var httpClient = new HttpClient())
             {
                 var response = await httpClient.PostAsJsonAsync(url, new
@@ -493,12 +527,13 @@ namespace EnigmaNet.DouYinOpenApi
                     item_ids = itemIds
                 });
 
-                result = await response.Content.ReadAsAsync<VideoDataModel>();
+                result = await response.Content.ReadAsAsync<DefaultResultModel<VideoDataModel>>();
             }
 
-            ThrowExceptionIfError(result);
+            var data = result.data;
+            ThrowExceptionIfError(data);
 
-            return result.list?.Select(m => new VideoItemInfo
+            return data.list?.Select(m => new VideoItemInfo
             {
                 ItemId = m.item_id,
                 Cover = m.cover,
@@ -519,29 +554,30 @@ namespace EnigmaNet.DouYinOpenApi
             }).ToList();
         }
 
-        public async Task<CommentListResult> GetVideoCommentListAsync(string openId, string accessToken, string itemId, int pageSize, int? cursor)
+        public async Task<CommentListResult> GetVideoCommentListAsync(string openId, string accessToken, string itemId, int pageSize, long? cursor)
         {
             var url = Api + "/video/comment/list/"
                .AddQueryParam("access_token", accessToken)
                .AddQueryParam("open_id", openId)
-               .AddQueryParam("cursor", cursor ?? 0)
+               .AddQueryParam("cursor", (cursor ?? 0).ToString())
                .AddQueryParam("count", pageSize)
                .AddQueryParam("item_id", itemId);
 
-            VideoCommentListModel result;
+            DefaultResultModel<VideoCommentListModel> result;
             using (var httpClient = new HttpClient())
             {
                 var response = await httpClient.GetAsync(url);
-                result = await response.Content.ReadAsAsync<VideoCommentListModel>();
+                result = await response.Content.ReadAsAsync<DefaultResultModel<VideoCommentListModel>>();
             }
 
-            ThrowExceptionIfError(result);
+            var data = result.data;
+            ThrowExceptionIfError(data);
 
             return new CommentListResult
             {
-                Cursor = result.cursor,
-                HasMore = result.has_more,
-                List = result.list?.Select(m => new CommentInfo
+                Cursor = data.cursor,
+                HasMore = data.has_more,
+                List = data.list?.Select(m => new CommentInfo
                 {
                     CommentId = m.comment_id,
                     CommentUserId = m.comment_user_id,
@@ -554,30 +590,31 @@ namespace EnigmaNet.DouYinOpenApi
             };
         }
 
-        public async Task<CommentListResult> GetVideoCommentReplyListAsync(string openId, string accessToken, string itemId, string commentId, int pageSize, int? cursor)
+        public async Task<CommentListResult> GetVideoCommentReplyListAsync(string openId, string accessToken, string itemId, string commentId, int pageSize, long? cursor)
         {
             var url = Api + "/video/comment/reply/list/"
                 .AddQueryParam("access_token", accessToken)
                 .AddQueryParam("open_id", openId)
-                .AddQueryParam("cursor", cursor ?? 0)
+                .AddQueryParam("cursor", (cursor ?? 0).ToString())
                 .AddQueryParam("count", pageSize)
                 .AddQueryParam("item_id", itemId)
                 .AddQueryParam("comment_id", commentId);
 
-            VideoCommentListModel result;
+            DefaultResultModel<VideoCommentListModel> result;
             using (var httpClient = new HttpClient())
             {
                 var response = await httpClient.GetAsync(url);
-                result = await response.Content.ReadAsAsync<VideoCommentListModel>();
+                result = await response.Content.ReadAsAsync<DefaultResultModel<VideoCommentListModel>>();
             }
 
-            ThrowExceptionIfError(result);
+            var data = result.data;
+            ThrowExceptionIfError(data);
 
             return new CommentListResult
             {
-                Cursor = result.cursor,
-                HasMore = result.has_more,
-                List = result.list?.Select(m => new CommentInfo
+                Cursor = data.cursor,
+                HasMore = data.has_more,
+                List = data.list?.Select(m => new CommentInfo
                 {
                     CommentId = m.comment_id,
                     CommentUserId = m.comment_user_id,
@@ -596,17 +633,18 @@ namespace EnigmaNet.DouYinOpenApi
                .AddQueryParam("access_token", accessToken)
                .AddQueryParam("open_id", openId);
 
-            ResultBase result;
+            DefaultResultModel<DataBase> result;
             using (var httpClient = new HttpClient())
             {
                 var response = await httpClient.PostAsJsonAsync(url, new
                 {
                     item_id = itemIds
                 });
-                result = await response.Content.ReadAsAsync<ResultBase>();
+                result = await response.Content.ReadAsAsync<DefaultResultModel<DataBase>>();
             }
 
-            ThrowExceptionIfError(result);
+            var data = result.data;
+            ThrowExceptionIfError(data);
         }
 
         public async Task<CreateVideoResult> CreateVideoAsync(string openId, string accessToken, string videoId, string text, string microAppId, string microAppTitle, string microAppUrl, double coverTime, string[] atUserOpenIds)
@@ -615,7 +653,7 @@ namespace EnigmaNet.DouYinOpenApi
                .AddQueryParam("access_token", accessToken)
                .AddQueryParam("open_id", openId);
 
-            CreateVideoModel result;
+            DefaultResultModel<CreateVideoModel> result;
             using (var httpClient = new HttpClient())
             {
                 var response = await httpClient.PostAsJsonAsync(url, new
@@ -628,14 +666,15 @@ namespace EnigmaNet.DouYinOpenApi
                     cover_tsp = coverTime,
                     at_users = atUserOpenIds,
                 });
-                result = await response.Content.ReadAsAsync<CreateVideoModel>();
+                result = await response.Content.ReadAsAsync<DefaultResultModel<CreateVideoModel>>();
             }
 
-            ThrowExceptionIfError(result);
+            var data = result.data;
+            ThrowExceptionIfError(data);
 
             return new CreateVideoResult
             {
-                ItemId = result.item_id,
+                ItemId = data.item_id,
             };
         }
 

@@ -6,7 +6,7 @@ namespace EnigmaNet.DouYinOpenApi.Models.Following
 {
     public class FollowingListResult
     {
-        public int Cursor { get; set; }
+        public long Cursor { get; set; }
         public bool HasMore { get; set; }
         public List<UserInfo> List { get; set; }
     }
