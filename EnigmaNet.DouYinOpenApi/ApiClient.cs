@@ -193,6 +193,17 @@ namespace EnigmaNet.DouYinOpenApi
             public string item_id { get; set; }
         }
 
+        class UploadVideoModel : DataBase
+        {
+            public class VideoModel
+            {
+                public string video_id { get; set; }
+                public int width { get; set; }
+                public int height { get; set; }
+            }
+            public VideoModel video { get; set; }
+        }
+
         #endregion
 
         const string Api = "https://open.douyin.com";
@@ -216,7 +227,7 @@ namespace EnigmaNet.DouYinOpenApi
         {
             if (result.error_code != 0)
             {
-                throw new DouYinApiException(result.error_code, result.description);
+                throw new DouYinApiException(result.error_code, $"errorCode({result.error_code})" + result.description);
             }
         }
 
@@ -246,22 +257,34 @@ namespace EnigmaNet.DouYinOpenApi
                 .AddQueryParam("code", code)
                 .AddQueryParam("grant_type", "authorization_code");
 
-            logger.LogDebug($"GetOAuthAccessTokenAsync,url:{url}");
+            if (logger.IsEnabled(LogLevel.Trace))
+            {
+                logger.LogTrace($"GetOAuthAccessTokenAsync,url:{url}");
+            }
 
             DefaultResultModel<AccessTokenModel> result;
             using (var httpClient = new HttpClient())
             {
                 var response = await httpClient.GetAsync(url);
 
-                logger.LogDebug($"GetOAuthAccessTokenAsync,StatusCode:{response.StatusCode}");
+                if (logger.IsEnabled(LogLevel.Trace))
+                {
+                    logger.LogTrace($"GetOAuthAccessTokenAsync,StatusCode:{response.StatusCode}");
+                }
 
                 var content = await response.Content.ReadAsStringAsync();
 
-                logger.LogDebug($"GetOAuthAccessTokenAsync,content:{content}");
+                if (logger.IsEnabled(LogLevel.Trace))
+                {
+                    logger.LogTrace($"GetOAuthAccessTokenAsync,content:{content}");
+                }
 
                 result = await response.Content.ReadAsAsync<DefaultResultModel<AccessTokenModel>>();
 
-                logger.LogDebug($"GetOAuthAccessTokenAsync,result:{(result != null ? Newtonsoft.Json.JsonConvert.SerializeObject(result) : "null")}");
+                if (logger.IsEnabled(LogLevel.Trace))
+                {
+                    logger.LogTrace($"GetOAuthAccessTokenAsync,result:{(result != null ? Newtonsoft.Json.JsonConvert.SerializeObject(result) : "null")}");
+                }
             }
 
             var data = result.data;
@@ -401,7 +424,7 @@ namespace EnigmaNet.DouYinOpenApi
             var url = Api + "​/fans/list/"
                .AddQueryParam("access_token", accessToken)
                .AddQueryParam("open_id", openId)
-               .AddQueryParam("cursor",( cursor ?? 0).ToString())
+               .AddQueryParam("cursor", (cursor ?? 0).ToString())
                .AddQueryParam("count ", pageSize)
                ;
 
@@ -471,16 +494,30 @@ namespace EnigmaNet.DouYinOpenApi
 
         public async Task<VideoListResult> GetVideoListAsync(string openId, string accessToken, int pageSize, long? cursor)
         {
+            var logger = LoggerFactory.CreateLogger<ApiClient>();
+
             var url = Api + "/video/list/"
                 .AddQueryParam("access_token", accessToken)
                 .AddQueryParam("open_id", openId)
                 .AddQueryParam("cursor", (cursor ?? 0).ToString())
                 .AddQueryParam("count", pageSize);
 
+            if (logger.IsEnabled(LogLevel.Trace))
+            {
+                logger.LogTrace($"GetVideoListAsync,url:{url}");
+            }
+
             DefaultResultModel<VideoListModel> result;
             using (var httpClient = new HttpClient())
             {
                 var response = await httpClient.GetAsync(url);
+
+                if (logger.IsEnabled(LogLevel.Trace))
+                {
+                    var content = await response.Content.ReadAsStringAsync();
+                    logger.LogTrace($"GetVideoListAsync,url:{url} content:{content}");
+                }
+
                 result = await response.Content.ReadAsAsync<DefaultResultModel<VideoListModel>>();
             }
 
@@ -515,9 +552,16 @@ namespace EnigmaNet.DouYinOpenApi
 
         public async Task<List<VideoItemInfo>> GetVideoDataAsync(string openId, string accessToken, string[] itemIds)
         {
+            var logger = LoggerFactory.CreateLogger<ApiClient>();
+
             var url = Api + "/video/data/"
                .AddQueryParam("access_token", accessToken)
                .AddQueryParam("open_id", openId);
+
+            if (logger.IsEnabled(LogLevel.Trace))
+            {
+                logger.LogTrace($"GetVideoDataAsync,url:{url}");
+            }
 
             DefaultResultModel<VideoDataModel> result;
             using (var httpClient = new HttpClient())
@@ -526,6 +570,15 @@ namespace EnigmaNet.DouYinOpenApi
                 {
                     item_ids = itemIds
                 });
+
+                if (logger.IsEnabled(LogLevel.Trace))
+                {
+                    var requestContent = await response.RequestMessage.Content.ReadAsStringAsync();
+                    logger.LogTrace($"GetVideoDataAsync,url:{url} requestContent:{requestContent}");
+
+                    var content = await response.Content.ReadAsStringAsync();
+                    logger.LogTrace($"GetVideoDataAsync,url:{url} content:{content}");
+                }
 
                 result = await response.Content.ReadAsAsync<DefaultResultModel<VideoDataModel>>();
             }
@@ -659,12 +712,12 @@ namespace EnigmaNet.DouYinOpenApi
                 var response = await httpClient.PostAsJsonAsync(url, new
                 {
                     video_id = videoId,
-                    text = text,
-                    micro_app_id = microAppId,
-                    micro_app_title = microAppTitle,
-                    micro_app_url = microAppUrl,
+                    text = text ?? string.Empty,
+                    micro_app_id = microAppId ?? string.Empty,
+                    micro_app_title = microAppTitle ?? string.Empty,
+                    micro_app_url = microAppUrl ?? string.Empty,
                     cover_tsp = coverTime,
-                    at_users = atUserOpenIds,
+                    at_users = atUserOpenIds ?? new string[] { },
                 });
                 result = await response.Content.ReadAsAsync<DefaultResultModel<CreateVideoModel>>();
             }
@@ -678,9 +731,50 @@ namespace EnigmaNet.DouYinOpenApi
             };
         }
 
-        public Task<UploadVideoResult> UploadVideoAsync(string openId, string accessToken, Stream stream)
+        public async Task<UploadVideoResult> UploadVideoAsync(string openId, string accessToken, Stream stream)
         {
-            throw new NotImplementedException();
+            var logger = LoggerFactory.CreateLogger<ApiClient>();
+
+            var url = Api + "/video/upload/"
+               .AddQueryParam("access_token", accessToken)
+               .AddQueryParam("open_id", openId);
+
+            var bytes = new byte[stream.Length];
+            stream.Read(bytes, 0, bytes.Length);
+            var byteContent = new ByteArrayContent(bytes);
+
+            var multipartContent = new MultipartFormDataContent();
+            multipartContent.Add(byteContent, "video", "1.mp4");
+
+            if (logger.IsEnabled(LogLevel.Trace))
+            {
+                logger.LogTrace($"video upload info, bytes len:{bytes.Length}");
+            }
+
+            DefaultResultModel<UploadVideoModel> result;
+            using (var httpClient = new HttpClient())
+            {
+                var response = await httpClient.PostAsync(url, multipartContent);
+
+                if (logger.IsEnabled(LogLevel.Trace))
+                {
+                    logger.LogTrace($"video upload response, status:{response.StatusCode}");
+                    var content = await response.Content.ReadAsStringAsync();
+                    logger.LogTrace($"video upload response, content:{content}");
+                }
+
+                result = await response.Content.ReadAsAsync<DefaultResultModel<UploadVideoModel>>();
+            }
+
+            var data = result.data;
+            ThrowExceptionIfError(data);
+
+            return new UploadVideoResult
+            {
+                VideoId = data.video.video_id,
+                Width = data.video.width,
+                Height = data.video.height,
+            };
         }
 
         public Task ReplyVideoCommentAsync(string openId, string accessToken, string itemId, string commentId, string content)
