@@ -269,22 +269,13 @@ namespace EnigmaNet.DouYinOpenApi
 
                 if (logger.IsEnabled(LogLevel.Trace))
                 {
-                    logger.LogTrace($"GetOAuthAccessTokenAsync,StatusCode:{response.StatusCode}");
-                }
+                    logger.LogTrace($"GetOAuthAccessTokenAsync,url:{url} statusCode:{response.StatusCode}");
 
-                var content = await response.Content.ReadAsStringAsync();
-
-                if (logger.IsEnabled(LogLevel.Trace))
-                {
-                    logger.LogTrace($"GetOAuthAccessTokenAsync,content:{content}");
+                    var content = await response.Content.ReadAsStringAsync();
+                    logger.LogTrace($"GetOAuthAccessTokenAsync,url:{url} content:{content}");
                 }
 
                 result = await response.Content.ReadAsAsync<DefaultResultModel<AccessTokenModel>>();
-
-                if (logger.IsEnabled(LogLevel.Trace))
-                {
-                    logger.LogTrace($"GetOAuthAccessTokenAsync,result:{(result != null ? Newtonsoft.Json.JsonConvert.SerializeObject(result) : "null")}");
-                }
             }
 
             var data = result.data;
@@ -303,15 +294,31 @@ namespace EnigmaNet.DouYinOpenApi
 
         public async Task<RefreshTokenResult> RefreshOAuthTokenAsync(string refreshToken)
         {
+            var logger = LoggerFactory.CreateLogger<ApiClient>();
+
             var url = Api + "/oauth/refresh_token/"
                 .AddQueryParam("client_key", Key)
                 .AddQueryParam("refresh_token ", refreshToken)
                 .AddQueryParam("grant_type", "refresh_token");
 
+            if (logger.IsEnabled(LogLevel.Trace))
+            {
+                logger.LogTrace($"RefreshOAuthTokenAsync,url:{url}");
+            }
+
             DefaultResultModel<RefreshTokenModel> result;
             using (var httpClient = new HttpClient())
             {
                 var response = await httpClient.GetAsync(url);
+
+                if (logger.IsEnabled(LogLevel.Trace))
+                {
+                    logger.LogTrace($"RefreshOAuthTokenAsync,url:{url} statusCode:{response.StatusCode}");
+
+                    var content = await response.Content.ReadAsStringAsync();
+                    logger.LogTrace($"RefreshOAuthTokenAsync,url:{url} content:{content}");
+                }
+
                 result = await response.Content.ReadAsAsync<DefaultResultModel<RefreshTokenModel>>();
             }
 
@@ -331,15 +338,31 @@ namespace EnigmaNet.DouYinOpenApi
 
         public async Task<ClientTokenResult> ApplyClientTokenAsync()
         {
+            var logger = LoggerFactory.CreateLogger<ApiClient>();
+
             var url = Api + "​/oauth​/client_token​/"
                 .AddQueryParam("client_key", Key)
                 .AddQueryParam("client_secret", Secret)
                 .AddQueryParam("grant_type", "client_credential");
 
+            if (logger.IsEnabled(LogLevel.Trace))
+            {
+                logger.LogTrace($"ApplyClientTokenAsync,url:{url}");
+            }
+
             DefaultResultModel<ClientTokenModel> result;
             using (var httpClient = new HttpClient())
             {
                 var response = await httpClient.GetAsync(url);
+
+                if (logger.IsEnabled(LogLevel.Trace))
+                {
+                    logger.LogTrace($"ApplyClientTokenAsync,url:{url} statusCode:{response.StatusCode}");
+
+                    var content = await response.Content.ReadAsStringAsync();
+                    logger.LogTrace($"ApplyClientTokenAsync,url:{url} content:{content}");
+                }
+
                 result = await response.Content.ReadAsAsync<DefaultResultModel<ClientTokenModel>>();
             }
 
@@ -354,14 +377,30 @@ namespace EnigmaNet.DouYinOpenApi
 
         public async Task<UserInfo> GetUserInfoAsync(string openId, string accessToken)
         {
+            var logger = LoggerFactory.CreateLogger<ApiClient>();
+
             var url = Api + "​/oauth/userinfo/"
                .AddQueryParam("access_token", accessToken)
                .AddQueryParam("open_id", openId);
+
+            if (logger.IsEnabled(LogLevel.Trace))
+            {
+                logger.LogTrace($"GetUserInfoAsync,url:{url}");
+            }
 
             DefaultResultModel<UserInfoModel> result;
             using (var httpClient = new HttpClient())
             {
                 var response = await httpClient.GetAsync(url);
+
+                if (logger.IsEnabled(LogLevel.Trace))
+                {
+                    logger.LogTrace($"GetUserInfoAsync,url:{url} statusCode:{response.StatusCode}");
+
+                    var content = await response.Content.ReadAsStringAsync();
+                    logger.LogTrace($"GetUserInfoAsync,url:{url} content:{content}");
+                }
+
                 result = await response.Content.ReadAsAsync<DefaultResultModel<UserInfoModel>>();
             }
 
@@ -384,6 +423,8 @@ namespace EnigmaNet.DouYinOpenApi
 
         public async Task<FollowingListResult> GetFollowingListAsync(string openId, string accessToken, int pageSize, long? cursor)
         {
+            var logger = LoggerFactory.CreateLogger<ApiClient>();
+
             var url = Api + "​/following/list/"
                .AddQueryParam("access_token", accessToken)
                .AddQueryParam("open_id", openId)
@@ -391,10 +432,24 @@ namespace EnigmaNet.DouYinOpenApi
                .AddQueryParam("count ", pageSize)
                ;
 
+            if (logger.IsEnabled(LogLevel.Trace))
+            {
+                logger.LogTrace($"GetFollowingListAsync,url:{url}");
+            }
+
             DefaultResultModel<FollowingListModel> result;
             using (var httpClient = new HttpClient())
             {
                 var response = await httpClient.GetAsync(url);
+
+                if (logger.IsEnabled(LogLevel.Trace))
+                {
+                    logger.LogTrace($"GetFollowingListAsync,url:{url} statusCode:{response.StatusCode}");
+
+                    var content = await response.Content.ReadAsStringAsync();
+                    logger.LogTrace($"GetFollowingListAsync,url:{url} content:{content}");
+                }
+
                 result = await response.Content.ReadAsAsync<DefaultResultModel<FollowingListModel>>();
             }
 
@@ -421,6 +476,8 @@ namespace EnigmaNet.DouYinOpenApi
 
         public async Task<FansListResult> GetFansListAsync(string openId, string accessToken, int pageSize, long? cursor)
         {
+            var logger = LoggerFactory.CreateLogger<ApiClient>();
+
             var url = Api + "​/fans/list/"
                .AddQueryParam("access_token", accessToken)
                .AddQueryParam("open_id", openId)
@@ -428,10 +485,24 @@ namespace EnigmaNet.DouYinOpenApi
                .AddQueryParam("count ", pageSize)
                ;
 
+            if (logger.IsEnabled(LogLevel.Trace))
+            {
+                logger.LogTrace($"GetFansListAsync,url:{url}");
+            }
+
             DefaultResultModel<FanListModel> result;
             using (var httpClient = new HttpClient())
             {
                 var response = await httpClient.GetAsync(url);
+
+                if (logger.IsEnabled(LogLevel.Trace))
+                {
+                    logger.LogTrace($"GetFansListAsync,url:{url} statusCode:{response.StatusCode}");
+
+                    var content = await response.Content.ReadAsStringAsync();
+                    logger.LogTrace($"GetFansListAsync,url:{url} content:{content}");
+                }
+
                 result = await response.Content.ReadAsAsync<DefaultResultModel<FanListModel>>();
             }
 
@@ -458,14 +529,30 @@ namespace EnigmaNet.DouYinOpenApi
 
         public async Task<DataResult> GetFansDataAsync(string openId, string accessToken)
         {
+            var logger = LoggerFactory.CreateLogger<ApiClient>();
+
             var url = Api + "/fans/data/"
                 .AddQueryParam("access_token", accessToken)
                 .AddQueryParam("open_id", openId);
+
+            if (logger.IsEnabled(LogLevel.Trace))
+            {
+                logger.LogTrace($"GetFansDataAsync,url:{url}");
+            }
 
             DefaultResultModel<FanDataModel> result;
             using (var httpClient = new HttpClient())
             {
                 var response = await httpClient.GetAsync(url);
+
+                if (logger.IsEnabled(LogLevel.Trace))
+                {
+                    logger.LogTrace($"GetFansDataAsync,url:{url} statusCode:{response.StatusCode}");
+
+                    var content = await response.Content.ReadAsStringAsync();
+                    logger.LogTrace($"GetFansDataAsync,url:{url} content:{content}");
+                }
+
                 result = await response.Content.ReadAsAsync<DefaultResultModel<FanDataModel>>();
             }
 
@@ -514,6 +601,8 @@ namespace EnigmaNet.DouYinOpenApi
 
                 if (logger.IsEnabled(LogLevel.Trace))
                 {
+                    logger.LogTrace($"GetVideoListAsync,url:{url} statusCode:{response.StatusCode}");
+
                     var content = await response.Content.ReadAsStringAsync();
                     logger.LogTrace($"GetVideoListAsync,url:{url} content:{content}");
                 }
@@ -576,6 +665,8 @@ namespace EnigmaNet.DouYinOpenApi
                     var requestContent = await response.RequestMessage.Content.ReadAsStringAsync();
                     logger.LogTrace($"GetVideoDataAsync,url:{url} requestContent:{requestContent}");
 
+                    logger.LogTrace($"GetVideoDataAsync,url:{url} statusCode:{response.StatusCode}");
+
                     var content = await response.Content.ReadAsStringAsync();
                     logger.LogTrace($"GetVideoDataAsync,url:{url} content:{content}");
                 }
@@ -609,6 +700,8 @@ namespace EnigmaNet.DouYinOpenApi
 
         public async Task<CommentListResult> GetVideoCommentListAsync(string openId, string accessToken, string itemId, int pageSize, long? cursor)
         {
+            var logger = LoggerFactory.CreateLogger<ApiClient>();
+
             var url = Api + "/video/comment/list/"
                .AddQueryParam("access_token", accessToken)
                .AddQueryParam("open_id", openId)
@@ -616,10 +709,24 @@ namespace EnigmaNet.DouYinOpenApi
                .AddQueryParam("count", pageSize)
                .AddQueryParam("item_id", itemId);
 
+            if (logger.IsEnabled(LogLevel.Trace))
+            {
+                logger.LogTrace($"GetVideoCommentListAsync,url:{url}");
+            }
+
             DefaultResultModel<VideoCommentListModel> result;
             using (var httpClient = new HttpClient())
             {
                 var response = await httpClient.GetAsync(url);
+
+                if (logger.IsEnabled(LogLevel.Trace))
+                {
+                    logger.LogTrace($"GetVideoCommentListAsync,url:{url} statusCode:{response.StatusCode}");
+
+                    var content = await response.Content.ReadAsStringAsync();
+                    logger.LogTrace($"GetVideoCommentListAsync,url:{url} content:{content}");
+                }
+
                 result = await response.Content.ReadAsAsync<DefaultResultModel<VideoCommentListModel>>();
             }
 
@@ -645,6 +752,8 @@ namespace EnigmaNet.DouYinOpenApi
 
         public async Task<CommentListResult> GetVideoCommentReplyListAsync(string openId, string accessToken, string itemId, string commentId, int pageSize, long? cursor)
         {
+            var logger = LoggerFactory.CreateLogger<ApiClient>();
+
             var url = Api + "/video/comment/reply/list/"
                 .AddQueryParam("access_token", accessToken)
                 .AddQueryParam("open_id", openId)
@@ -653,10 +762,24 @@ namespace EnigmaNet.DouYinOpenApi
                 .AddQueryParam("item_id", itemId)
                 .AddQueryParam("comment_id", commentId);
 
+            if (logger.IsEnabled(LogLevel.Trace))
+            {
+                logger.LogTrace($"GetVideoCommentReplyListAsync,url:{url}");
+            }
+
             DefaultResultModel<VideoCommentListModel> result;
             using (var httpClient = new HttpClient())
             {
                 var response = await httpClient.GetAsync(url);
+
+                if (logger.IsEnabled(LogLevel.Trace))
+                {
+                    logger.LogTrace($"GetVideoCommentReplyListAsync,url:{url} statusCode:{response.StatusCode}");
+
+                    var content = await response.Content.ReadAsStringAsync();
+                    logger.LogTrace($"GetVideoCommentReplyListAsync,url:{url} content:{content}");
+                }
+
                 result = await response.Content.ReadAsAsync<DefaultResultModel<VideoCommentListModel>>();
             }
 
@@ -682,9 +805,16 @@ namespace EnigmaNet.DouYinOpenApi
 
         public async Task DeleteVideoAsync(string openId, string accessToken, string[] itemIds)
         {
+            var logger = LoggerFactory.CreateLogger<ApiClient>();
+
             var url = Api + "/video/delete/"
                .AddQueryParam("access_token", accessToken)
                .AddQueryParam("open_id", openId);
+
+            if (logger.IsEnabled(LogLevel.Trace))
+            {
+                logger.LogTrace($"DeleteVideoAsync,url:{url}");
+            }
 
             DefaultResultModel<DataBase> result;
             using (var httpClient = new HttpClient())
@@ -693,6 +823,15 @@ namespace EnigmaNet.DouYinOpenApi
                 {
                     item_id = itemIds
                 });
+
+                if (logger.IsEnabled(LogLevel.Trace))
+                {
+                    logger.LogTrace($"DeleteVideoAsync,url:{url} statusCode:{response.StatusCode}");
+
+                    var content = await response.Content.ReadAsStringAsync();
+                    logger.LogTrace($"DeleteVideoAsync,url:{url} content:{content}");
+                }
+
                 result = await response.Content.ReadAsAsync<DefaultResultModel<DataBase>>();
             }
 
@@ -702,9 +841,16 @@ namespace EnigmaNet.DouYinOpenApi
 
         public async Task<CreateVideoResult> CreateVideoAsync(string openId, string accessToken, string videoId, string text, string microAppId, string microAppTitle, string microAppUrl, double coverTime, string[] atUserOpenIds)
         {
+            var logger = LoggerFactory.CreateLogger<ApiClient>();
+
             var url = Api + "/video/create/"
                .AddQueryParam("access_token", accessToken)
                .AddQueryParam("open_id", openId);
+
+            if (logger.IsEnabled(LogLevel.Trace))
+            {
+                logger.LogTrace($"CreateVideoAsync,url:{url}");
+            }
 
             DefaultResultModel<CreateVideoModel> result;
             using (var httpClient = new HttpClient())
@@ -719,6 +865,18 @@ namespace EnigmaNet.DouYinOpenApi
                     cover_tsp = coverTime,
                     at_users = atUserOpenIds ?? new string[] { },
                 });
+
+                if (logger.IsEnabled(LogLevel.Trace))
+                {
+                    var requestContent = await response.RequestMessage.Content.ReadAsStringAsync();
+                    logger.LogTrace($"CreateVideoAsync,url:{url} requestContent:{requestContent}");
+
+                    logger.LogTrace($"CreateVideoAsync,url:{url} statusCode:{response.StatusCode}");
+
+                    var content = await response.Content.ReadAsStringAsync();
+                    logger.LogTrace($"CreateVideoAsync,url:{url} content:{content}");
+                }
+
                 result = await response.Content.ReadAsAsync<DefaultResultModel<CreateVideoModel>>();
             }
 
@@ -739,6 +897,11 @@ namespace EnigmaNet.DouYinOpenApi
                .AddQueryParam("access_token", accessToken)
                .AddQueryParam("open_id", openId);
 
+            if (logger.IsEnabled(LogLevel.Trace))
+            {
+                logger.LogTrace($"UploadVideoAsync,url:{url}");
+            }
+
             var bytes = new byte[stream.Length];
             stream.Read(bytes, 0, bytes.Length);
             var byteContent = new ByteArrayContent(bytes);
@@ -748,7 +911,7 @@ namespace EnigmaNet.DouYinOpenApi
 
             if (logger.IsEnabled(LogLevel.Trace))
             {
-                logger.LogTrace($"video upload info, bytes len:{bytes.Length}");
+                logger.LogTrace($"UploadVideoAsync2,url:{url}, bytes len:{bytes.Length}");
             }
 
             DefaultResultModel<UploadVideoModel> result;
@@ -758,9 +921,10 @@ namespace EnigmaNet.DouYinOpenApi
 
                 if (logger.IsEnabled(LogLevel.Trace))
                 {
-                    logger.LogTrace($"video upload response, status:{response.StatusCode}");
+                    logger.LogTrace($"video upload response,url:{url} statusCode:{response.StatusCode}");
+
                     var content = await response.Content.ReadAsStringAsync();
-                    logger.LogTrace($"video upload response, content:{content}");
+                    logger.LogTrace($"video upload response,url:{url} content:{content}");
                 }
 
                 result = await response.Content.ReadAsAsync<DefaultResultModel<UploadVideoModel>>();
