@@ -298,7 +298,7 @@ namespace EnigmaNet.DouYinOpenApi
 
             var url = Api + "/oauth/refresh_token/"
                 .AddQueryParam("client_key", Key)
-                .AddQueryParam("refresh_token ", refreshToken)
+                .AddQueryParam("refresh_token", refreshToken)
                 .AddQueryParam("grant_type", "refresh_token");
 
             if (logger.IsEnabled(LogLevel.Trace))
@@ -429,7 +429,7 @@ namespace EnigmaNet.DouYinOpenApi
                .AddQueryParam("access_token", accessToken)
                .AddQueryParam("open_id", openId)
                .AddQueryParam("cursor", (cursor ?? 0).ToString())
-               .AddQueryParam("count ", pageSize)
+               .AddQueryParam("count", pageSize)
                ;
 
             if (logger.IsEnabled(LogLevel.Trace))
@@ -482,7 +482,7 @@ namespace EnigmaNet.DouYinOpenApi
                .AddQueryParam("access_token", accessToken)
                .AddQueryParam("open_id", openId)
                .AddQueryParam("cursor", (cursor ?? 0).ToString())
-               .AddQueryParam("count ", pageSize)
+               .AddQueryParam("count", pageSize)
                ;
 
             if (logger.IsEnabled(LogLevel.Trace))
