@@ -20,6 +20,12 @@ namespace EnigmaNet.DouYinOpenApi
 
         Task<Models.Fans.FansListResult> GetFansListAsync(string openId, string accessToken, int pageSize, long? cursor);
 
+        /// <summary>
+        /// 获取用户粉丝数据（经实践得知此数据是调用时的前2天的粉丝数据）
+        /// </summary>
+        /// <param name="openId"></param>
+        /// <param name="accessToken"></param>
+        /// <returns></returns>
         Task<Models.Fans.DataResult> GetFansDataAsync(string openId, string accessToken);
 
         Task<Models.Video.UploadVideoResult> UploadVideoAsync(string openId, string accessToken, System.IO.Stream stream);
