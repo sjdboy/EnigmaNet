@@ -611,6 +611,10 @@ namespace EnigmaNet.DouYinOpenApi
             }
 
             var data = result.data;
+            if (data == null)
+            {
+                return null;
+            }
             ThrowExceptionIfError(data);
 
             return new VideoListResult
