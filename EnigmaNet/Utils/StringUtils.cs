@@ -208,20 +208,28 @@ namespace EnigmaNet.Utils
         /// </summary>
         /// <param name="text">内容</param>
         /// <param name="startShowLength">开始部分显示几个字</param>
+        /// <param name="endShowLength">结束部分显示几个字</param>
         /// <returns></returns>
-        public static string GetHiddenString(string text, int startShowLength)
+        public static string GetHiddenString(string text, int startShowLength, int endShowLength = 0)
         {
             if (startShowLength <= 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(startShowLength));
             }
+            if (endShowLength < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(endShowLength));
+            }
 
-            if (string.IsNullOrEmpty(text) || text.Length <= startShowLength)
+            if (string.IsNullOrEmpty(text) || text.Length <= (startShowLength + endShowLength))
             {
                 return text;
             }
 
-            return text.Substring(0, startShowLength) + RepeatString("*", text.Length - startShowLength);
+            return text.Substring(0, startShowLength)
+                + RepeatString("*", text.Length - startShowLength - endShowLength)
+                + text.Substring(text.Length - endShowLength)
+                ;
         }
 
         public static string IfEmptyBecome(string text, string emptyBecomeText)
