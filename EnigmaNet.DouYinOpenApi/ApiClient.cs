@@ -27,6 +27,11 @@ namespace EnigmaNet.DouYinOpenApi
             public string description { get; set; }
         }
 
+        class CommonResultModel : DataBase
+        {
+
+        }
+
         class DefaultResultModel<T> where T : DataBase
         {
             public T data { get; set; }
@@ -945,19 +950,144 @@ namespace EnigmaNet.DouYinOpenApi
             };
         }
 
-        public Task ReplyVideoCommentAsync(string openId, string accessToken, string itemId, string commentId, string content)
+        public async Task ReplyVideoCommentAsync(string openId, string accessToken, string itemId, string commentId, string content)
         {
-            throw new NotImplementedException();
+            if (string.IsNullOrEmpty(content))
+            {
+                throw new ArgumentNullException(nameof(content));
+            }
+
+            var logger = LoggerFactory.CreateLogger<ApiClient>();
+
+            var url = Api + "/video/comment/reply/"
+               .AddQueryParam("access_token", accessToken)
+               .AddQueryParam("open_id", openId);
+
+            if (logger.IsEnabled(LogLevel.Trace))
+            {
+                logger.LogTrace($"ReplyVideoCommentAsync,url:{url}");
+            }
+
+            CommonResultModel result;
+            using (var httpClient = new HttpClient())
+            {
+                var response = await httpClient.PostAsJsonAsync(url, new
+                {
+                    item_id = itemId,
+                    comment_id = commentId,
+                    content = content,
+                });
+
+                if (logger.IsEnabled(LogLevel.Trace))
+                {
+                    var requestContent = await response.RequestMessage.Content.ReadAsStringAsync();
+                    logger.LogTrace($"ReplyVideoCommentAsync,url:{url} requestContent:{requestContent}");
+
+                    logger.LogTrace($"ReplyVideoCommentAsync,url:{url} statusCode:{response.StatusCode}");
+
+                    var responseContent = await response.Content.ReadAsStringAsync();
+                    logger.LogTrace($"ReplyVideoCommentAsync,url:{url} responseContent:{responseContent}");
+                }
+
+                result = await response.Content.ReadAsAsync<CommonResultModel>();
+            }
+
+            ThrowExceptionIfError(result);
         }
 
-        public Task SendIMMessageAsync(string openId, string accessToken, string toUserId, bool isImageMessage, string messageContent)
+        public async Task SetVideoCommentTopStatusAsync(string openId, string accessToken, string itemId, string commentId, bool isTop)
         {
-            throw new NotImplementedException();
+            var logger = LoggerFactory.CreateLogger<ApiClient>();
+
+            var url = Api + "/video/comment/top/"
+               .AddQueryParam("access_token", accessToken)
+               .AddQueryParam("open_id", openId);
+
+            if (logger.IsEnabled(LogLevel.Trace))
+            {
+                logger.LogTrace($"SetVideoCommentTopStatusAsync,url:{url}");
+            }
+
+            CommonResultModel result;
+            using (var httpClient = new HttpClient())
+            {
+                var response = await httpClient.PostAsJsonAsync(url, new
+                {
+                    item_id = itemId,
+                    comment_id = commentId,
+                    top = isTop,
+                });
+
+                if (logger.IsEnabled(LogLevel.Trace))
+                {
+                    var requestContent = await response.RequestMessage.Content.ReadAsStringAsync();
+                    logger.LogTrace($"SetVideoCommentTopStatusAsync,url:{url} requestContent:{requestContent}");
+
+                    logger.LogTrace($"SetVideoCommentTopStatusAsync,url:{url} statusCode:{response.StatusCode}");
+
+                    var responseContent = await response.Content.ReadAsStringAsync();
+                    logger.LogTrace($"SetVideoCommentTopStatusAsync,url:{url} responseContent:{responseContent}");
+                }
+
+                result = await response.Content.ReadAsAsync<CommonResultModel>();
+            }
+
+            ThrowExceptionIfError(result);
         }
 
-        public Task SetVideoCommentTopStatusAsync(string openId, string accessToken, string itemId, string commentId, bool isTop)
+        public async Task SendIMMessageAsync(string openId, string accessToken, string toUserId, bool isImageMessage, string messageContent)
         {
-            throw new NotImplementedException();
+            if (string.IsNullOrEmpty(messageContent))
+            {
+                throw new ArgumentNullException(nameof(messageContent));
+            }
+
+            var logger = LoggerFactory.CreateLogger<ApiClient>();
+
+            var url = Api + "/im/message/send/"
+               .AddQueryParam("access_token", accessToken)
+               .AddQueryParam("open_id", openId);
+
+            if (logger.IsEnabled(LogLevel.Trace))
+            {
+                logger.LogTrace($"SendIMMessageAsync,url:{url}");
+            }
+
+            string messageType;
+            if (isImageMessage)
+            {
+                messageType = "image";
+            }
+            else
+            {
+                messageType = "text";
+            }
+
+            CommonResultModel result;
+            using (var httpClient = new HttpClient())
+            {
+                var response = await httpClient.PostAsJsonAsync(url, new
+                {
+                    to_user_id = toUserId,
+                    message_type = messageType,
+                    content = messageContent,
+                });
+
+                if (logger.IsEnabled(LogLevel.Trace))
+                {
+                    var requestContent = await response.RequestMessage.Content.ReadAsStringAsync();
+                    logger.LogTrace($"SendIMMessageAsync,url:{url} requestContent:{requestContent}");
+
+                    logger.LogTrace($"SendIMMessageAsync,url:{url} statusCode:{response.StatusCode}");
+
+                    var responseContent = await response.Content.ReadAsStringAsync();
+                    logger.LogTrace($"SendIMMessageAsync,url:{url} responseContent:{responseContent}");
+                }
+
+                result = await response.Content.ReadAsAsync<CommonResultModel>();
+            }
+
+            ThrowExceptionIfError(result);
         }
     }
 }
