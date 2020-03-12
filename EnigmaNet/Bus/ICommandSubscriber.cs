@@ -7,6 +7,7 @@ namespace EnigmaNet.Bus
     /// <summary>
     /// 命令订阅器
     /// </summary>
+    [Obsolete("请使用BusV2")]
     public interface ICommandSubscriber
     {
         /// <summary>

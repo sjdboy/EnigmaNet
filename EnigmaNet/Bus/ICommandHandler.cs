@@ -9,6 +9,7 @@ namespace EnigmaNet.Bus
     /// 命令处理器
     /// </summary>
     /// <typeparam name="T"></typeparam>
+    [Obsolete("请使用BusV2")]
     public interface ICommandHandler<T> where T : Command
     {
         /// <summary>

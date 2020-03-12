@@ -114,5 +114,35 @@ namespace EnigmaNet.Bus
             }
         }
 
+        public static void Subscriber(BusV2.ICommandSubscriber commandSubscriber, IEventSubscriber eventSubscriber, params object[] handlers)
+        {
+            foreach (var eventHanlder in handlers)
+            {
+                Subscriber(eventSubscriber, eventHanlder);
+            }
+
+            foreach (var commandHandler in handlers)
+            {
+                BusV2.SubscriberUtils.Subscriber(commandSubscriber, commandHandler);
+            }
+        }
+
+        public static void Subscriber(BusV2.ICommandSubscriber commandSubscriber, IEventSubscriber eventSubscriber, IDelayMessageSubscriber delayMessageSubscriber, params object[] handlers)
+        {
+            foreach (var eventHanlder in handlers)
+            {
+                Subscriber(eventSubscriber, eventHanlder);
+            }
+
+            foreach (var commandHandler in handlers)
+            {
+                BusV2.SubscriberUtils.Subscriber(commandSubscriber, commandHandler);
+            }
+
+            foreach (var handler in handlers)
+            {
+                Subscriber(delayMessageSubscriber, handler);
+            }
+        }
     }
 }

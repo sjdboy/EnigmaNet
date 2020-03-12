@@ -9,6 +9,7 @@ namespace EnigmaNet.Bus
     /// <summary>
     /// 命令发布器
     /// </summary>
+    [Obsolete("请使用BusV2")]
     public interface ICommandSender
     {
         /// <summary>

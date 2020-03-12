@@ -13,6 +13,7 @@ namespace EnigmaNet.Bus.Impl
     /// <remarks>
     /// 发送命令为同步处理方式
     /// </remarks>
+    [Obsolete("请使用BusV2")]
     public sealed class CommandBus : ICommandSender, ICommandSubscriber
     {
         #region private
