@@ -4,11 +4,11 @@ using System.Text;
 
 namespace EnigmaNet.BusV2
 {
-    public struct CommandEmptyResult : IEquatable<CommandEmptyResult>, IComparable<CommandEmptyResult>, IComparable
+    public class Empty : IEquatable<Empty>, IComparable<Empty>, IComparable
     {
-        public static CommandEmptyResult Value = new CommandEmptyResult();
+        public static Empty Value = new Empty();
 
-        public int CompareTo(CommandEmptyResult other)
+        public int CompareTo(Empty other)
         {
             return 0;
         }
@@ -18,7 +18,7 @@ namespace EnigmaNet.BusV2
             return 0;
         }
 
-        public bool Equals(CommandEmptyResult other)
+        public bool Equals(Empty other)
         {
             return true;
         }
@@ -33,12 +33,12 @@ namespace EnigmaNet.BusV2
             return 0;
         }
 
-        public static bool operator ==(CommandEmptyResult first, CommandEmptyResult second)
+        public static bool operator ==(Empty first, Empty second)
         {
             return true;
         }
 
-        public static bool operator !=(CommandEmptyResult first, CommandEmptyResult second)
+        public static bool operator !=(Empty first, Empty second)
         {
             return false;
         }

@@ -4,10 +4,10 @@ namespace EnigmaNet.BusV2
 {
     public interface ICommandHandler<in TCommand, TResult> where TCommand : ICommand<TResult>
     {
-        Task<TResult> HandlerAsync(TCommand command);
+        Task<TResult> HandleAsync(TCommand command);
     }
 
-    public interface ICommandHandler<in TCommand> : ICommandHandler<TCommand, CommandEmptyResult> where TCommand : ICommand<CommandEmptyResult>
+    public interface ICommandHandler<in TCommand> : ICommandHandler<TCommand, Empty> where TCommand : ICommand<Empty>
     {
     }
 }

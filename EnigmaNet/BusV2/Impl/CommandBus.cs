@@ -69,7 +69,7 @@ namespace EnigmaNet.BusV2.Impl
 
             if (response.StatusCode == System.Net.HttpStatusCode.OK || response.StatusCode == System.Net.HttpStatusCode.NoContent)
             {
-                if (typeof(TResult) == typeof(CommandEmptyResult))
+                if (typeof(TResult) == typeof(Empty))
                 {
                     return default;
                 }
@@ -124,6 +124,11 @@ namespace EnigmaNet.BusV2.Impl
 
             if (handler != null)
             {
+                if (Logger?.IsEnabled(LogLevel.Trace) == true)
+                {
+                    Logger.LogTrace($"match handler,command type:{type} address:{handler.GetType()}");
+                }
+
                 var methodInfo = _handlerMethods.GetValueOrDefault(type);
 
                 var task = (Task<TResult>)(methodInfo.Invoke(handler, new object[] { command }));
@@ -136,13 +141,8 @@ namespace EnigmaNet.BusV2.Impl
                 var typeString = type.FullName;
                 var addresses = _options.RemoteCommandHandlerAddresses
                     .Where(m => typeString.StartsWith(m.Key))
-                    .OrderByDescending(m => m.Key.Length)
+                    .OrderByDescending(m => m.Key.Length)//取最接近的
                     .FirstOrDefault().Value;
-
-                if (!(addresses?.Count > 0))
-                {
-                    addresses = _options.RemoteCommandHandlerAddresses.FirstOrDefault(m => m.Key == "*").Value;
-                }
 
                 if (addresses?.Count > 0)
                 {
@@ -150,11 +150,16 @@ namespace EnigmaNet.BusV2.Impl
 
                     if (Logger?.IsEnabled(LogLevel.Trace) == true)
                     {
-                        Logger.LogTrace($"match remote address,command type:{typeString} address:{addresses}");
+                        Logger.LogTrace($"match remote handler address,command type:{typeString} address:{addresses}");
                     }
 
                     return ExecuteRemoteAsync(command, address);
                 }
+            }
+
+            if (Logger?.IsEnabled(LogLevel.Error) == true)
+            {
+                Logger.LogError($"no match any handler,command type:{type}");
             }
 
             throw new NotImplementedException($"no handler for '{type}'");
@@ -190,11 +195,19 @@ namespace EnigmaNet.BusV2.Impl
 
             if (added == false)
             {
-                throw new NotSupportedException($"handler already exists,command type:{type}");
+                if (Logger?.IsEnabled(LogLevel.Error) == true)
+                {
+                    Logger.LogError($"command had subscribe,command type:{type} handler:{handler.GetType()}");
+                }
             }
             else
             {
-                var method = typeof(ICommandHandler<TCommand, TResult>).GetMethod(nameof(ICommandHandler<TCommand, TResult>.HandlerAsync));
+                if (Logger?.IsEnabled(LogLevel.Trace) == true)
+                {
+                    Logger.LogTrace($"subscribe handler,command type:{type} handler:{handler.GetType()}");
+                }
+
+                var method = typeof(ICommandHandler<TCommand, TResult>).GetMethod(nameof(ICommandHandler<TCommand, TResult>.HandleAsync));
 
                 _handlerMethods.TryAdd(type, method);
             }
