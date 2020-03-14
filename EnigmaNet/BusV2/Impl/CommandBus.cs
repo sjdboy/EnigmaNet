@@ -27,6 +27,11 @@ namespace EnigmaNet.BusV2.Impl
             {
                 return commandExecuter.ExecuteAsync(command).ContinueWith(m =>
                 {
+                    if (m.IsFaulted)
+                    {
+                        throw m.Exception;
+                    }
+
                     return (object)m.Result;
                 });
             }
