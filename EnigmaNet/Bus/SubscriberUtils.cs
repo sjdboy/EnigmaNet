@@ -11,15 +11,15 @@ namespace EnigmaNet.Bus
         static void Subscriber(ICommandSubscriber commandSubscriber, object commandHandler)
         {
             var handlerTypes = commandHandler.GetType().GetInterfaces()
-                    .Where(m => m.IsGenericType && m.GetGenericTypeDefinition() == typeof(ICommandHandler<>));
+                    .Where(m => m.IsGenericType && m.GetGenericTypeDefinition() == typeof(ICommandHandler<,>));
 
             if (handlerTypes != null && handlerTypes.Count() > 0)
             {
-                var subscribeMethod = typeof(ICommandSubscriber).GetMethod("Subscribe");
+                var subscribeMethod = typeof(ICommandSubscriber).GetMethod(nameof(ICommandSubscriber.SubscribeAsync));
                 foreach (var handlerType in handlerTypes)
                 {
-                    var commandType = handlerType.GetGenericArguments();
-                    subscribeMethod.MakeGenericMethod(commandType).Invoke(commandSubscriber, new object[] { commandHandler });
+                    var commandTypes = handlerType.GetGenericArguments();
+                    subscribeMethod.MakeGenericMethod(commandTypes).Invoke(commandSubscriber, new object[] { commandHandler });
                 }
             }
         }
@@ -106,55 +106,6 @@ namespace EnigmaNet.Bus
             foreach (var commandHandler in handlers)
             {
                 Subscriber(commandSubscriber, commandHandler);
-            }
-
-            foreach (var handler in handlers)
-            {
-                Subscriber(delayMessageSubscriber, handler);
-            }
-        }
-
-        public static void Subscriber(BusV2.ICommandSubscriber commandSubscriber1, ICommandSubscriber commandSubscriber2, IEventSubscriber eventSubscriber, params object[] handlers)
-        {
-            foreach (var eventHanlder in handlers)
-            {
-                Subscriber(eventSubscriber, eventHanlder);
-            }
-
-            foreach (var commandHandler in handlers)
-            {
-                BusV2.SubscriberUtils.Subscriber(commandSubscriber1, commandHandler);
-            }
-
-            foreach (var commandHandler in handlers)
-            {
-                Subscriber(commandSubscriber2, commandHandler);
-            }
-        }
-
-        public static void Subscriber(BusV2.ICommandSubscriber commandSubscriber, IEventSubscriber eventSubscriber, params object[] handlers)
-        {
-            foreach (var eventHanlder in handlers)
-            {
-                Subscriber(eventSubscriber, eventHanlder);
-            }
-
-            foreach (var commandHandler in handlers)
-            {
-                BusV2.SubscriberUtils.Subscriber(commandSubscriber, commandHandler);
-            }
-        }
-
-        public static void Subscriber(BusV2.ICommandSubscriber commandSubscriber, IEventSubscriber eventSubscriber, IDelayMessageSubscriber delayMessageSubscriber, params object[] handlers)
-        {
-            foreach (var eventHanlder in handlers)
-            {
-                Subscriber(eventSubscriber, eventHanlder);
-            }
-
-            foreach (var commandHandler in handlers)
-            {
-                BusV2.SubscriberUtils.Subscriber(commandSubscriber, commandHandler);
             }
 
             foreach (var handler in handlers)

@@ -5,7 +5,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Bus\Command.cs" />
+    <Compile Remove="Bus\ICommandSender.cs" />
     <Compile Remove="Bus\Impl\EventBus2Options.cs" />
+    <Compile Remove="Extensions\BusExtensions.cs" />
   </ItemGroup>
 
   <ItemGroup>

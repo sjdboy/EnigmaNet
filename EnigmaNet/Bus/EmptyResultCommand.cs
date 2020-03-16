@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace EnigmaNet.BusV2
+namespace EnigmaNet.Bus
 {
     public abstract class EmptyResultCommand : ICommand<Empty>
     {

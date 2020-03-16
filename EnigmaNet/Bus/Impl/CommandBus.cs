@@ -1,28 +1,35 @@
-﻿using Microsoft.Extensions.Logging;
-using System;
+﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
+using System.Net.Http;
+using System.Reflection;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+
+using EnigmaNet.Exceptions;
+using Newtonsoft.Json;
 
 namespace EnigmaNet.Bus.Impl
 {
-    /// <summary>
-    /// 命令总线（订阅和发送命令）
-    /// </summary>
-    /// <remarks>
-    /// 发送命令为同步处理方式
-    /// </remarks>
-    [Obsolete("请使用BusV2")]
-    public sealed class CommandBus : ICommandSender, ICommandSubscriber
+    public sealed class CommandBus : ICommandExecuter, ICommandSubscriber
     {
-        #region private
+        class MessageModel
+        {
+            public string Code { get; set; }
+            public string Message { get; set; }
+        }
 
         ILogger _log;
-        ILogger Log
+        ILogger Logger
         {
             get
             {
+                if (LoggerFactory == null)
+                {
+                    return null;
+                }
                 if (_log == null)
                 {
                     _log = LoggerFactory.CreateLogger<CommandBus>();
@@ -31,96 +38,146 @@ namespace EnigmaNet.Bus.Impl
             }
         }
 
-        /// <summary>
-        /// 命令处理器集合
-        /// </summary>
-        /// <remarks>
-        /// key:命令类型
-        /// value:处理器列表
-        /// </remarks>
-        Dictionary<Type, object> _commandHandlers = new Dictionary<Type, object>();
-        /// <summary>
-        /// 命令处理器集合操作锁
-        /// </summary>
-        object _locker = new object();
+        ConcurrentDictionary<Type, object> _handlers = new ConcurrentDictionary<Type, object>();
 
-        #endregion
+        ConcurrentDictionary<Type, MethodInfo> _handlerMethods = new ConcurrentDictionary<Type, MethodInfo>();
 
-        public ILoggerFactory LoggerFactory { get; set; }
+        CommandBusOptions _options;
 
-        public CommandBus() { }
-
-        //public CommandBus(ILoggerFactory loggerFactory)
-        //{
-        //    _log = loggerFactory.CreateLogger<CommandBus>();
-        //}
-
-        #region ICommandSender
-
-        public async Task SendAsync<T>(T command) where T : Command
+        private async Task<TResult> ExecuteRemoteAsync<TResult>(ICommand<TResult> command, string address)
         {
-            var commandType = typeof(T);
+            var typeString = command.GetType().FullName;
 
-            object handler;
-            _commandHandlers.TryGetValue(commandType, out handler);
+            var httpClient = HttpClientFactory.CreateClient();
+
+            var commandString = JsonConvert.SerializeObject(command, new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All, });
+
+            var response = await httpClient.PostAsync(address, new StringContent(commandString));
+
+            if (response.StatusCode == System.Net.HttpStatusCode.OK || response.StatusCode == System.Net.HttpStatusCode.NoContent)
+            {
+                if (typeof(TResult) == typeof(Empty))
+                {
+                    return default;
+                }
+
+                if (response.StatusCode == System.Net.HttpStatusCode.OK)
+                {
+                    return await response.Content.ReadAsAsync<TResult>();
+                }
+                else
+                {
+                    return default;
+                }
+            }
+            else if (response.StatusCode == System.Net.HttpStatusCode.Conflict)
+            {
+                var message = await response.Content.ReadAsAsync<MessageModel>();
+
+                throw new BizException(message.Message);
+            }
+            else if (response.StatusCode == System.Net.HttpStatusCode.BadRequest)
+            {
+                var message = await response.Content.ReadAsAsync<MessageModel>();
+
+                throw new ArgumentException(message.Message);
+            }
+            else
+            {
+                throw new Exception($"remote command handler error,command type:{typeString} http code:{response.StatusCode} address:{address}");
+            }
+        }
+
+        public IOptionsMonitor<CommandBusOptions> Options
+        {
+            set
+            {
+                _options = value.CurrentValue;
+
+                value.OnChange(options =>
+                {
+                    _options = options;
+                });
+            }
+        }
+        public ILoggerFactory LoggerFactory { get; set; }
+        public IHttpClientFactory HttpClientFactory { get; set; }
+
+        public Task<TResult> ExecuteAsync<TResult>(ICommand<TResult> command)
+        {
+            var type = command.GetType();
+
+            _handlers.TryGetValue(type, out object handler);
 
             if (handler != null)
             {
-                if (Log.IsEnabled(LogLevel.Debug))
+                if (Logger?.IsEnabled(LogLevel.Trace) == true)
                 {
-                    Log.LogDebug("Send command start,commandType:{0} hanlder:{1}",  commandType, handler.GetType());
+                    Logger.LogTrace($"match handler,command type:{type} address:{handler.GetType()}");
                 }
 
-                await ((ICommandHandler<T>)handler).HandleAsync(command);
+                var methodInfo = _handlerMethods.GetValueOrDefault(type);
 
-                if (Log.IsEnabled(LogLevel.Debug))
+                var task = (Task<TResult>)(methodInfo.Invoke(handler, new object[] { command }));
+
+                return task;
+            }
+
+            if (_options?.RemoteCommandHandlerAddresses?.Count > 0)
+            {
+                var typeString = type.FullName;
+                var addresses = _options.RemoteCommandHandlerAddresses
+                    .Where(m => typeString.StartsWith(m.Key))
+                    .OrderByDescending(m => m.Key.Length)//取最接近的
+                    .FirstOrDefault().Value;
+
+                if (addresses?.Count > 0)
                 {
-                    Log.LogDebug("Send command complete,commandType:{0} hanlder:{1}",  commandType, handler.GetType());
+                    var address = addresses[DateTime.Now.Millisecond % addresses.Count];
+
+                    if (Logger?.IsEnabled(LogLevel.Trace) == true)
+                    {
+                        Logger.LogTrace($"match remote handler address,command type:{typeString} address:{addresses}");
+                    }
+
+                    return ExecuteRemoteAsync(command, address);
+                }
+            }
+
+            if (Logger?.IsEnabled(LogLevel.Error) == true)
+            {
+                Logger.LogError($"no match any handler,command type:{type}");
+            }
+
+            throw new NotImplementedException($"no handler for '{type}'");
+        }
+
+        public Task SubscribeAsync<TCommand, TResult>(ICommandHandler<TCommand, TResult> handler) where TCommand : ICommand<TResult>
+        {
+            var type = typeof(TCommand);
+
+            var added = _handlers.TryAdd(type, handler);
+
+            if (added == false)
+            {
+                if (Logger?.IsEnabled(LogLevel.Error) == true)
+                {
+                    Logger.LogError($"command had subscribe,command type:{type} handler:{handler.GetType()}");
                 }
             }
             else
             {
-                if (Log.IsEnabled(LogLevel.Critical))
+                if (Logger?.IsEnabled(LogLevel.Trace) == true)
                 {
-                    Log.LogCritical("CommandHandler not impl,commandType:{0} ", commandType);
+                    Logger.LogTrace($"subscribe handler,command type:{type} handler:{handler.GetType()}");
                 }
 
-                throw new NotImplementedException(string.Format("CommandHandler not impl,commandType:{0} ", commandType));
+                var method = typeof(ICommandHandler<TCommand, TResult>).GetMethod(nameof(ICommandHandler<TCommand, TResult>.HandleAsync));
+
+                _handlerMethods.TryAdd(type, method);
             }
+
+            return Task.CompletedTask;
         }
-
-        #endregion
-
-        #region ICommandSubscriber
-
-        public void Subscribe<T>(ICommandHandler<T> handler) where T : Command
-        {
-            if (handler == null)
-            {
-                throw new ArgumentNullException("handler");
-            }
-
-            var commandType = typeof(T);
-
-            lock (_locker)
-            {
-                if (_commandHandlers.ContainsKey(commandType))
-                {
-                    throw new NotSupportedException(string.Format("command handler already exists, commandType={0}", commandType));
-                }
-                else
-                {
-                    _commandHandlers.Add(commandType, handler);
-
-                    if (Log.IsEnabled(LogLevel.Debug))
-                    {
-                        Log.LogDebug("Subscribe command handler,commandType:{0} handler:{1}", commandType, handler.GetType());
-                    }
-                }
-            }
-        }
-
-        #endregion
-
     }
 }

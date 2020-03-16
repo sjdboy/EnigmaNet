@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace EnigmaNet.BusV2
+namespace EnigmaNet.Bus
 {
     public class Empty : IEquatable<Empty>, IComparable<Empty>, IComparable
     {

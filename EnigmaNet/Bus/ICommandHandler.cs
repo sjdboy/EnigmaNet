@@ -1,21 +1,30 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
 namespace EnigmaNet.Bus
 {
-    /// <summary>
-    /// 命令处理器
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    [Obsolete("请使用BusV2")]
-    public interface ICommandHandler<T> where T : Command
+    public interface ICommandHandler<TCommand, TResult> where TCommand : ICommand<TResult>
     {
-        /// <summary>
-        /// 处理命令 
-        /// </summary>
-        /// <param name="command">命令</param>
-        Task HandleAsync(T command);
+        Task<TResult> HandleAsync(TCommand command);
+    }
+
+    //public interface ICommandHandler<in TCommand> : ICommandHandler<TCommand, Empty> where TCommand : ICommand<Empty>
+    //{
+    //}
+
+    public interface ICommandTaskHandler<TCommand> : ICommandHandler<TCommand, Empty> where TCommand : ICommand<Empty>
+    {
+        Task<Empty> ICommandHandler<TCommand, Empty>.HandleAsync(TCommand command)
+        {
+            return HandleTaskAsync(command).ContinueWith(m =>
+            {
+                if (m.IsFaulted)
+                {
+                    throw m.Exception;
+                }
+                return Empty.Value;
+            });
+        }
+
+        Task HandleTaskAsync(TCommand command);
     }
 }

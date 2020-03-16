@@ -1,4 +1,4 @@
-﻿namespace EnigmaNet.BusV2
+﻿namespace EnigmaNet.Bus
 {
     public interface ICommand<TResult>
     {

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace EnigmaNet.BusV2.Impl
+namespace EnigmaNet.Bus.Impl
 {
     public class CommandBusOptions
     {
