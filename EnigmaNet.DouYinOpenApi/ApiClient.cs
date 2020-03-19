@@ -566,6 +566,11 @@ namespace EnigmaNet.DouYinOpenApi
 
             var fansData = data.fans_data;
 
+            if (fansData == null)
+            {
+                return null;
+            }
+
             return new DataResult
             {
                 FansAmount = fansData.all_fans_num,
