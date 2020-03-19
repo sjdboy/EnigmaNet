@@ -72,12 +72,49 @@ namespace EnigmaNet.AspNet.Middlewares.ApiExceptionHandler
                 {
                     await _next(httpContext);
                 }
-                catch (BizException biz)
+                catch (Exception ex)
                 {
-                    var messageString = JsonConvert.SerializeObject(
-                        new MessageModel
+                    Exception exception;
+                    if (ex is AggregateException)
+                    {
+                        exception = ((AggregateException)ex).InnerException;
+                    }
+                    else
+                    {
+                        exception = ex;
+                    }
+
+                    if (exception is BizException)
+                    {
+                        var biz = (BizException)exception;
+
+                        var messageString = JsonConvert.SerializeObject(
+                            new MessageModel
+                            {
+                                Message = biz.Message
+                            },
+                            new JsonSerializerSettings
+                            {
+                                ContractResolver = new DefaultContractResolver
+                                {
+                                    NamingStrategy = new CamelCaseNamingStrategy()
+                                }
+                            });
+
+                        httpContext.Response.Clear();
+                        httpContext.Response.StatusCode = Convert.ToInt32(System.Net.HttpStatusCode.Conflict);
+                        httpContext.Response.ContentType = JsonContentType;
+                        await httpContext.Response.WriteAsync(messageString);
+                    }
+                    else if (exception is ArgumentException)
+                    {
+                        var arg = (ArgumentException)exception;
+
+                        _logger.LogWarning(arg, $"request info,path:{httpContext.Request.Path} queryString:{httpContext.Request.QueryString}");
+
+                        var messageString = JsonConvert.SerializeObject(new MessageModel
                         {
-                            Message = biz.Message
+                            Message = arg.Message
                         },
                         new JsonSerializerSettings
                         {
@@ -87,52 +124,32 @@ namespace EnigmaNet.AspNet.Middlewares.ApiExceptionHandler
                             }
                         });
 
-                    httpContext.Response.Clear();
-                    httpContext.Response.StatusCode = Convert.ToInt32(System.Net.HttpStatusCode.Conflict);
-                    httpContext.Response.ContentType = JsonContentType;
-                    await httpContext.Response.WriteAsync(messageString);
-                }
-                catch (ArgumentException arg)
-                {
-                    _logger.LogWarning(arg, $"request info,path:{httpContext.Request.Path} queryString:{httpContext.Request.QueryString}");
+                        httpContext.Response.Clear();
+                        httpContext.Response.StatusCode = Convert.ToInt32(System.Net.HttpStatusCode.BadRequest);
+                        httpContext.Response.ContentType = JsonContentType;
+                        await httpContext.Response.WriteAsync(messageString);
+                    }
+                    else
+                    {
+                        _logger.LogWarning(exception, $"request info,path:{httpContext.Request.Path} queryString:{httpContext.Request.QueryString}");
 
-                    var messageString = JsonConvert.SerializeObject(new MessageModel
-                    {
-                        Message = arg.Message
-                    },
-                    new JsonSerializerSettings
-                    {
-                        ContractResolver = new DefaultContractResolver
+                        var messageString = JsonConvert.SerializeObject(new MessageModel
                         {
-                            NamingStrategy = new CamelCaseNamingStrategy()
-                        }
-                    });
-
-                    httpContext.Response.Clear();
-                    httpContext.Response.StatusCode = Convert.ToInt32(System.Net.HttpStatusCode.BadRequest);
-                    httpContext.Response.ContentType = JsonContentType;
-                    await httpContext.Response.WriteAsync(messageString);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, $"request info,path:{httpContext.Request.Path} queryString:{httpContext.Request.QueryString}");
-
-                    var messageString = JsonConvert.SerializeObject(new MessageModel
-                    {
-                        Message = ex.Message
-                    },
-                    new JsonSerializerSettings
-                    {
-                        ContractResolver = new DefaultContractResolver
+                            Message = exception.Message
+                        },
+                        new JsonSerializerSettings
                         {
-                            NamingStrategy = new CamelCaseNamingStrategy()
-                        }
-                    });
+                            ContractResolver = new DefaultContractResolver
+                            {
+                                NamingStrategy = new CamelCaseNamingStrategy()
+                            }
+                        });
 
-                    httpContext.Response.Clear();
-                    httpContext.Response.StatusCode = Convert.ToInt32(System.Net.HttpStatusCode.InternalServerError);
-                    httpContext.Response.ContentType = JsonContentType;
-                    await httpContext.Response.WriteAsync(messageString);
+                        httpContext.Response.Clear();
+                        httpContext.Response.StatusCode = Convert.ToInt32(System.Net.HttpStatusCode.InternalServerError);
+                        httpContext.Response.ContentType = JsonContentType;
+                        await httpContext.Response.WriteAsync(messageString);
+                    }
                 }
             }
             else
