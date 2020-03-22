@@ -6,7 +6,7 @@ namespace EnigmaNet.DouYinOpenApi
 {
     public interface IApiClient
     {
-        Task<string> GetOAuthConnectAsync(string[] scopes,string state,string redirectUrl);
+        Task<string> GetOAuthConnectAsync(string[] scopes, string state, string redirectUrl);
 
         Task<Models.OAuth.AccessTokenResult> GetOAuthAccessTokenAsync(string code);
 
@@ -30,7 +30,7 @@ namespace EnigmaNet.DouYinOpenApi
 
         Task<Models.Video.UploadVideoResult> UploadVideoAsync(string openId, string accessToken, System.IO.Stream stream);
 
-        Task<Models.Video.CreateVideoResult> CreateVideoAsync(string openId, string accessToken, string videoId, string text, string microAppId, string microAppTitle, string microAppUrl, double coverTime, string[] atUserOpenIds);
+        Task<Models.Video.CreateVideoResult> CreateVideoAsync(string openId, string accessToken, string videoId, string text, string microAppId, string microAppTitle, string microAppUrl, double coverTime, string[] atUserOpenIds,string poiId,string poiName);
 
         Task<Models.Video.VideoListResult> GetVideoListAsync(string openId, string accessToken, int pageSize, long? cursor);
 
@@ -47,5 +47,7 @@ namespace EnigmaNet.DouYinOpenApi
         Task SetVideoCommentTopStatusAsync(string openId, string accessToken, string itemId, string commentId, bool isTop);
 
         Task SendIMMessageAsync(string openId, string accessToken, string toUserId, bool isImageMessage, string messageContent);
+
+        Task<Models.Poi.PoiListResult> SearchPoiAsync(string clientAccessToken, string cityName, string keyword, int pageSize, long? cursor);
     }
 }

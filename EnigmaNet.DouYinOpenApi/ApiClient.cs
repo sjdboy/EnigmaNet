@@ -14,6 +14,7 @@ using EnigmaNet.DouYinOpenApi.Models.Following;
 using EnigmaNet.DouYinOpenApi.Models.OAuth;
 using EnigmaNet.DouYinOpenApi.Models.Video;
 using EnigmaNet.Utils;
+using EnigmaNet.DouYinOpenApi.Models.Poi;
 
 namespace EnigmaNet.DouYinOpenApi
 {
@@ -193,6 +194,27 @@ namespace EnigmaNet.DouYinOpenApi
             public List<ItemModel> list { get; set; }
         }
 
+        class PoiSearchListModel : DataBase
+        {
+            public class ItemModel
+            {
+                public string poi_id { get; set; }
+                public string poi_name { get; set; }
+                public string location { get; set; }
+                public string country { get; set; }
+                public string country_code { get; set; }
+                public string province { get; set; }
+                public string city { get; set; }
+                public string city_code { get; set; }
+                public string district { get; set; }
+                public string address { get; set; }
+            }
+
+            public long cursor { get; set; }
+            public bool has_more { get; set; }
+            public List<ItemModel> pois { get; set; }
+        }
+
         class CreateVideoModel : DataBase
         {
             public string item_id { get; set; }
@@ -345,7 +367,7 @@ namespace EnigmaNet.DouYinOpenApi
         {
             var logger = LoggerFactory.CreateLogger<ApiClient>();
 
-            var url = Api + "​/oauth​/client_token​/"
+            var url = Api + "/oauth/client_token/"
                 .AddQueryParam("client_key", Key)
                 .AddQueryParam("client_secret", Secret)
                 .AddQueryParam("grant_type", "client_credential");
@@ -853,7 +875,7 @@ namespace EnigmaNet.DouYinOpenApi
             ThrowExceptionIfError(data);
         }
 
-        public async Task<CreateVideoResult> CreateVideoAsync(string openId, string accessToken, string videoId, string text, string microAppId, string microAppTitle, string microAppUrl, double coverTime, string[] atUserOpenIds)
+        public async Task<CreateVideoResult> CreateVideoAsync(string openId, string accessToken, string videoId, string text, string microAppId, string microAppTitle, string microAppUrl, double coverTime, string[] atUserOpenIds, string poiId, string poiName)
         {
             var logger = LoggerFactory.CreateLogger<ApiClient>();
 
@@ -873,6 +895,8 @@ namespace EnigmaNet.DouYinOpenApi
                 {
                     video_id = videoId,
                     text = text ?? string.Empty,
+                    poi_id = poiId ?? string.Empty,
+                    poi_name = poiName ?? string.Empty,
                     micro_app_id = microAppId ?? string.Empty,
                     micro_app_title = microAppTitle ?? string.Empty,
                     micro_app_url = microAppUrl ?? string.Empty,
@@ -1093,6 +1117,61 @@ namespace EnigmaNet.DouYinOpenApi
             }
 
             ThrowExceptionIfError(result);
+        }
+
+        public async Task<PoiListResult> SearchPoiAsync(string clientAccessToken, string cityName, string keyword, int pageSize, long? cursor)
+        {
+            var logger = LoggerFactory.CreateLogger<ApiClient>();
+
+            var url = Api + "/poi/search/keyword/"
+                .AddQueryParam("access_token", clientAccessToken)
+                .AddQueryParam("keyword", keyword)
+                .AddQueryParam("city", cityName)
+                .AddQueryParam("cursor", (cursor ?? 0).ToString())
+                .AddQueryParam("count", pageSize);
+
+            if (logger.IsEnabled(LogLevel.Trace))
+            {
+                logger.LogTrace($"SearchPoiAsync,url:{url}");
+            }
+
+            DefaultResultModel<PoiSearchListModel> result;
+            using (var httpClient = new HttpClient())
+            {
+                var response = await httpClient.GetAsync(url);
+
+                if (logger.IsEnabled(LogLevel.Trace))
+                {
+                    logger.LogTrace($"SearchPoiAsync,url:{url} statusCode:{response.StatusCode}");
+
+                    var content = await response.Content.ReadAsStringAsync();
+                    logger.LogTrace($"SearchPoiAsync,url:{url} content:{content}");
+                }
+
+                result = await response.Content.ReadAsAsync<DefaultResultModel<PoiSearchListModel>>();
+            }
+
+            var data = result.data;
+            ThrowExceptionIfError(data);
+
+            return new PoiListResult
+            {
+                Cursor = data.cursor,
+                HasMore = data.has_more,
+                List = data.pois?.Select(m => new PoiModel
+                {
+                    PoiId = m.poi_id,
+                    PoiName = m.poi_name,
+                    Address = m.address,
+                    City = m.city,
+                    CityCode = m.city_code,
+                    Province = m.province,
+                    Country = m.country,
+                    CountryCode = m.country_code,
+                    District = m.district,
+                    Location = m.location,
+                }).ToList(),
+            };
         }
     }
 }
