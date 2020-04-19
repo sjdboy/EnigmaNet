@@ -191,7 +191,7 @@ namespace EnigmaNet.RabbitMQBus
                 bool success;
                 try
                 {
-                    var messageStr = Encoding.UTF8.GetString(message.Body);
+                    var messageStr = Encoding.UTF8.GetString(message.Body.ToArray());
 
                     if (logger.IsEnabled(LogLevel.Debug))
                     {

@@ -19,7 +19,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EnigmaNet.Redis", "EnigmaNe
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EnigmaNet.QCloud.Cos", "EnigmaNet.QCloud.Cos\EnigmaNet.QCloud.Cos.csproj", "{78095A97-B646-4352-83EE-9A24D070ECEB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EnigmaNet.DouYinOpenApi", "EnigmaNet.DouYinOpenApi\EnigmaNet.DouYinOpenApi.csproj", "{35ED0C0E-11C4-4B7D-BF0F-E4C4FC500A3C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EnigmaNet.DouYinOpenApi", "EnigmaNet.DouYinOpenApi\EnigmaNet.DouYinOpenApi.csproj", "{35ED0C0E-11C4-4B7D-BF0F-E4C4FC500A3C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EnigmaNet.BytedanceMicroApp", "EnigmaNet.BytedanceMicroApp\EnigmaNet.BytedanceMicroApp.csproj", "{9DB8E55A-656A-405A-8B0F-72B6CBB9CEEC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -63,6 +65,10 @@ Global
 		{35ED0C0E-11C4-4B7D-BF0F-E4C4FC500A3C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{35ED0C0E-11C4-4B7D-BF0F-E4C4FC500A3C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{35ED0C0E-11C4-4B7D-BF0F-E4C4FC500A3C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9DB8E55A-656A-405A-8B0F-72B6CBB9CEEC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9DB8E55A-656A-405A-8B0F-72B6CBB9CEEC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9DB8E55A-656A-405A-8B0F-72B6CBB9CEEC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9DB8E55A-656A-405A-8B0F-72B6CBB9CEEC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
