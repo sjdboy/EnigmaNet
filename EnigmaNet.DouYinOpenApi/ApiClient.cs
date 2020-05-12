@@ -274,6 +274,18 @@ namespace EnigmaNet.DouYinOpenApi
             return Task.FromResult(url);
         }
 
+        public Task<string> GetOAuthConnectV2Async(string state, string redirectUrl)
+        {
+            var url = "https://aweme.snssdk.com/oauth/authorize/v2/"
+                .AddQueryParam("client_key", Key)
+                .AddQueryParam("response_type", "code")
+                .AddQueryParam("scope", "login_id")
+                .AddQueryParam("state", state)
+                .AddQueryParam("redirect_uri", redirectUrl);
+
+            return Task.FromResult(url);
+        }
+
         public async Task<AccessTokenResult> GetOAuthAccessTokenAsync(string code)
         {
             var logger = LoggerFactory.CreateLogger<ApiClient>();

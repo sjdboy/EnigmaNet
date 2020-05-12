@@ -8,6 +8,8 @@ namespace EnigmaNet.DouYinOpenApi
     {
         Task<string> GetOAuthConnectAsync(string[] scopes, string state, string redirectUrl);
 
+        Task<string> GetOAuthConnectV2Async(string state, string redirectUrl);
+
         Task<Models.OAuth.AccessTokenResult> GetOAuthAccessTokenAsync(string code);
 
         Task<Models.OAuth.RefreshTokenResult> RefreshOAuthTokenAsync(string refreshToken);
@@ -30,7 +32,7 @@ namespace EnigmaNet.DouYinOpenApi
 
         Task<Models.Video.UploadVideoResult> UploadVideoAsync(string openId, string accessToken, System.IO.Stream stream);
 
-        Task<Models.Video.CreateVideoResult> CreateVideoAsync(string openId, string accessToken, string videoId, string text, string microAppId, string microAppTitle, string microAppUrl, double coverTime, string[] atUserOpenIds,string poiId,string poiName);
+        Task<Models.Video.CreateVideoResult> CreateVideoAsync(string openId, string accessToken, string videoId, string text, string microAppId, string microAppTitle, string microAppUrl, double coverTime, string[] atUserOpenIds, string poiId, string poiName);
 
         Task<Models.Video.VideoListResult> GetVideoListAsync(string openId, string accessToken, int pageSize, long? cursor);
 
