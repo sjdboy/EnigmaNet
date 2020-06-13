@@ -38,7 +38,7 @@ namespace EnigmaNet.DouYinOpenApi
 
         Task<List<Models.Video.VideoItemInfo>> GetVideoDataAsync(string openId, string accessToken, string[] itemIds);
 
-        Task DeleteVideoAsync(string openId, string accessToken, string[] itemIds);
+        Task DeleteVideoAsync(string openId, string accessToken, string itemId);
 
         Task<Models.Video.CommentListResult> GetVideoCommentListAsync(string openId, string accessToken, string itemId, int pageSize, long? cursor);
 

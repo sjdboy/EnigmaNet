@@ -851,7 +851,7 @@ namespace EnigmaNet.DouYinOpenApi
             };
         }
 
-        public async Task DeleteVideoAsync(string openId, string accessToken, string[] itemIds)
+        public async Task DeleteVideoAsync(string openId, string accessToken, string itemId)
         {
             var logger = LoggerFactory.CreateLogger<ApiClient>();
 
@@ -861,15 +861,15 @@ namespace EnigmaNet.DouYinOpenApi
 
             if (logger.IsEnabled(LogLevel.Trace))
             {
-                logger.LogTrace($"DeleteVideoAsync,url:{url}");
+                logger.LogTrace($"DeleteVideoAsync,url:{url} itemId:{itemId}");
             }
 
-            DefaultResultModel<DataBase> result;
+            DefaultResultModel<CommonResultModel> result;
             using (var httpClient = new HttpClient())
             {
                 var response = await httpClient.PostAsJsonAsync(url, new
                 {
-                    item_id = itemIds
+                    item_id = itemId
                 });
 
                 if (logger.IsEnabled(LogLevel.Trace))
@@ -880,7 +880,7 @@ namespace EnigmaNet.DouYinOpenApi
                     logger.LogTrace($"DeleteVideoAsync,url:{url} content:{content}");
                 }
 
-                result = await response.Content.ReadAsAsync<DefaultResultModel<DataBase>>();
+                result = await response.Content.ReadAsAsync<DefaultResultModel<CommonResultModel>>();
             }
 
             var data = result.data;
