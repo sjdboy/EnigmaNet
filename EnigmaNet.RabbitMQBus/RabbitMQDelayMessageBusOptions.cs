@@ -13,6 +13,5 @@ namespace EnigmaNet.RabbitMQBus
         public string Password { get; set; }
         public string FailMessageStoreFolder { get; set; }
         public string CoreExchangeName { get; set; }
-        public string InstanceId { get; set; }
     }
 }

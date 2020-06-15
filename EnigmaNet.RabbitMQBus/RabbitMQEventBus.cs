@@ -21,23 +21,15 @@ namespace EnigmaNet.RabbitMQBus
     {
         #region private
 
-        #region class
-
-        class LoggerSubCategories
-        {
-            public const string Init = "Init";
-            public const string SaveMessageToLocal = "SaveMessageToLocal";
-            public const string LocalMessageSendHandler = "LocalMessageSendHandler";
-        }
-
-        #endregion
-
         #region fields
 
         const string ExchangeTypeFanout = "fanout";
         const int ErrorWaitTime = 1000 * 2;
         const int EmptyWaitMilliSeconds = 1000 * 2;
         const int FailTTL = 1000 * 10;
+
+        ILogger _logger;
+        RabbitMQEventBusOptions _optionValue;
 
         const int LocalMessageOnceHandlerWaitMilliSencods = 1000 * 60;
 
@@ -48,9 +40,6 @@ namespace EnigmaNet.RabbitMQBus
         IConnection _connection;
         object _connectionLocker = new object();
 
-        string PublishEventNamePrefix { get { return Options.Value.PublishEventNamePrefix; } }
-        string InstanceId { get { return Options.Value.InstanceId; } }
-
         #endregion
 
         #region methods
@@ -59,11 +48,11 @@ namespace EnigmaNet.RabbitMQBus
         {
             return new ConnectionFactory()
             {
-                UserName = Options.Value.UserName,
-                Password = Options.Value.Password,
-                Port = Options.Value.Port,
-                HostName = Options.Value.Host,
-                VirtualHost = Options.Value.VirtualHost,
+                UserName = _optionValue.UserName,
+                Password = _optionValue.Password,
+                Port = _optionValue.Port,
+                HostName = _optionValue.Host,
+                VirtualHost = _optionValue.VirtualHost,
                 AutomaticRecoveryEnabled = true,
             };
         }
@@ -98,58 +87,19 @@ namespace EnigmaNet.RabbitMQBus
             return properties;
         }
 
-        ILogger GetInitLogger()
-        {
-            return GetLogger(LoggerSubCategories.Init);
-        }
-
-        ILogger GetLogger()
-        {
-            return LoggerFactory.CreateLogger<RabbitMQEventBus>();
-        }
-
-        ILogger GetLogger(string subCategory)
-        {
-            return LoggerFactory.CreateLogger($"EnigmaNet.RabbitMQBus.RabbitMQEventBus_{subCategory}");
-        }
-
         string GetExchangeName(Type eventType)
         {
-            if (string.IsNullOrEmpty(InstanceId))
-            {
-                throw new InvalidOperationException("InstanceId is empty");
-            }
-
-            var eventTypeName = eventType.FullName;
-
-            if (!string.IsNullOrEmpty(PublishEventNamePrefix) && eventTypeName.StartsWith(PublishEventNamePrefix))
-            {
-                return eventTypeName;
-            }
-            else
-            {
-                return $"{InstanceId}_{eventTypeName}";
-            }
+            return eventType.FullName;
         }
 
         string GetQueueName(Type handlerType)
         {
-            if (string.IsNullOrEmpty(InstanceId))
-            {
-                throw new InvalidOperationException("InstanceId is empty");
-            }
-
-            return $"{InstanceId}_{handlerType.FullName}";
+            return handlerType.FullName;
         }
 
         string GetFailQueueName(Type handlerType)
         {
-            if (string.IsNullOrEmpty(InstanceId))
-            {
-                throw new InvalidOperationException("InstanceId is empty");
-            }
-
-            return $"{InstanceId}_{handlerType.FullName}_fail";
+            return $"{handlerType.FullName}_fail";
         }
 
         void CreateExchangeIfNot(Type eventType)
@@ -174,7 +124,7 @@ namespace EnigmaNet.RabbitMQBus
         {
             var handlerType = handler.GetType();
             var queueName = GetQueueName(handlerType);
-            var logger = GetLogger();
+            var logger = _logger;
             _handlerToEvents.TryGetValue(handlerType, out ConcurrentBag<Type> supportEvents);
 
             while (true)
@@ -186,18 +136,15 @@ namespace EnigmaNet.RabbitMQBus
                     continue;
                 }
 
-                logger.LogDebug($"receive a message");
+                var messageStr = Encoding.UTF8.GetString(message.Body.ToArray());
+                if (logger.IsEnabled(LogLevel.Debug))
+                {
+                    logger.LogDebug($"receive a message,queueName:{queueName} content:{messageStr}");
+                }
 
                 bool success;
                 try
                 {
-                    var messageStr = Encoding.UTF8.GetString(message.Body.ToArray());
-
-                    if (logger.IsEnabled(LogLevel.Debug))
-                    {
-                        logger.LogDebug($"message content:{messageStr}");
-                    }
-
                     var @event = (Event)JsonConvert.DeserializeObject(messageStr, new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All });
 
                     var eventType = @event.GetType();
@@ -250,9 +197,7 @@ namespace EnigmaNet.RabbitMQBus
             {
                 var queueName = GetQueueName(handlerType);
 
-                var logger = GetInitLogger();
-
-                logger.LogInformation($"handler init, handlerType:{handlerType}");
+                _logger.LogInformation($"handler init, handlerType:{handlerType}");
 
                 _handlerToEvents.TryGetValue(handlerType, out ConcurrentBag<Type> eventTypes);
 
@@ -260,7 +205,7 @@ namespace EnigmaNet.RabbitMQBus
                 {
                     try
                     {
-                        logger.LogInformation($"handler init,beging create rabbitmq object, handlerType:{handlerType}");
+                        _logger.LogInformation($"handler init,beging create rabbitmq object, handlerType:{handlerType}");
 
                         using (var channel = GetConnection().CreateModel())
                         {
@@ -279,10 +224,10 @@ namespace EnigmaNet.RabbitMQBus
                                 failQueueParameters.Add(Utils.QueueArguments.MessageTTL, FailTTL);
 
                                 channel.QueueDeclare(queueName, true, false, false, queueParameters);
-                                logger.LogDebug($"handler init,create queue finish,queueName:{queueName}, handlerType:{handlerType}");
+                                _logger.LogDebug($"handler init,create queue finish,queueName:{queueName}, handlerType:{handlerType}");
 
                                 channel.QueueDeclare(failQueueName, true, false, false, failQueueParameters);
-                                logger.LogDebug($"handler init,create fail queue finish,failQueueName:{failQueueName}, handlerType:{handlerType}");
+                                _logger.LogDebug($"handler init,create fail queue finish,failQueueName:{failQueueName}, handlerType:{handlerType}");
 
                                 _buildedQueues.TryAdd(handlerType, true);
                             }
@@ -294,26 +239,26 @@ namespace EnigmaNet.RabbitMQBus
                                 if (!_buildedExchanges.ContainsKey(eventType))
                                 {
                                     channel.ExchangeDeclare(exchangeName, ExchangeTypeFanout, true, false);
-                                    logger.LogDebug($"handler init,create exchange finish,exchangeName:{exchangeName}");
+                                    _logger.LogDebug($"handler init,create exchange finish,exchangeName:{exchangeName}");
 
                                     _buildedExchanges.TryAdd(eventType, true);
                                 }
 
                                 //subscribe
                                 channel.QueueBind(queueName, exchangeName, string.Empty);
-                                logger.LogDebug($"handler init,bind queue finish,queueName:{queueName} exchangeName:{exchangeName}");
+                                _logger.LogDebug($"handler init,bind queue finish,queueName:{queueName} exchangeName:{exchangeName}");
                             }
                         }
                     }
                     catch (Exception ex)
                     {
-                        logger.LogError(ex, $"handler init,create rabbitmq object error, handlerType:{handlerType}");
+                        _logger.LogError(ex, $"handler init,create rabbitmq object error, handlerType:{handlerType}");
                         Thread.CurrentThread.Join(ErrorWaitTime);
 
                         continue;
                     }
 
-                    logger.LogInformation($"handler init,create rabbitmq object completed, handlerType:{handlerType}");
+                    _logger.LogInformation($"handler init,create rabbitmq object completed, handlerType:{handlerType}");
                     break;
                 }
             }
@@ -321,7 +266,6 @@ namespace EnigmaNet.RabbitMQBus
             //handle message
             while (true)
             {
-                var logger = GetLogger();
                 try
                 {
                     using (var channel = GetConnection().CreateModel())
@@ -331,7 +275,7 @@ namespace EnigmaNet.RabbitMQBus
                 }
                 catch (Exception ex)
                 {
-                    logger.LogError(ex, $"handle error, handlerType:{handlerType}");
+                    _logger.LogError(ex, $"handle error, handlerType:{handlerType}");
                     Thread.CurrentThread.Join(ErrorWaitTime);
                 }
             }
@@ -339,14 +283,19 @@ namespace EnigmaNet.RabbitMQBus
 
         string GetFailMessageFolderPath()
         {
-            string folderPath;
-            if (Path.IsPathRooted(Options.Value.FailMessageStoreFolder))
+            if (string.IsNullOrEmpty(_optionValue.FailMessageStoreFolder))
             {
-                folderPath = Options.Value.FailMessageStoreFolder;
+                return Path.Combine(System.AppContext.BaseDirectory, "\\bus_fail_events");
+            }
+
+            string folderPath;
+            if (Path.IsPathRooted(_optionValue.FailMessageStoreFolder))
+            {
+                folderPath = _optionValue.FailMessageStoreFolder;
             }
             else
             {
-                folderPath = Path.Combine(System.AppContext.BaseDirectory, Options.Value.FailMessageStoreFolder);
+                folderPath = Path.Combine(System.AppContext.BaseDirectory, _optionValue.FailMessageStoreFolder);
             }
 
             return folderPath;
@@ -364,10 +313,9 @@ namespace EnigmaNet.RabbitMQBus
 
             File.WriteAllText(filePath, messageString, Encoding.UTF8);
 
-            var logger = GetLogger(LoggerSubCategories.SaveMessageToLocal);
-            if (logger.IsEnabled(LogLevel.Information))
+            if (_logger.IsEnabled(LogLevel.Information))
             {
-                logger.LogInformation($"SaveMessageToLocal,filePath:{filePath} messageString:{messageString}");
+                _logger.LogInformation($"SaveMessageToLocal,filePath:{filePath} messageString:{messageString}");
             }
         }
 
@@ -381,15 +329,13 @@ namespace EnigmaNet.RabbitMQBus
 
             var files = new DirectoryInfo(folderPath).GetFiles()?.OrderBy(m => m.CreationTime).ToList();
 
-            var logger = GetLogger(LoggerSubCategories.LocalMessageSendHandler);
-
             if (!(files?.Count > 0))
             {
-                logger.LogInformation("get local messages, empty");
+                _logger.LogInformation("get local messages, empty");
                 return;
             }
 
-            logger.LogInformation($"get local messages, count:{files.Count}");
+            _logger.LogInformation($"get local messages, count:{files.Count}");
 
             foreach (var file in files)
             {
@@ -412,23 +358,21 @@ namespace EnigmaNet.RabbitMQBus
                 }
                 catch (Exception ex)
                 {
-                    logger.LogError(ex, $"send message error,skip,eventId:{@event.EventId}");
+                    _logger.LogError(ex, $"send message error,skip,eventId:{@event.EventId}");
                     Thread.CurrentThread.Join(ErrorWaitTime);
                     continue;
                 }
 
-                logger.LogInformation($"send local message complete,eventId:{@event.EventId}");
+                _logger.LogInformation($"send local message complete,eventId:{@event.EventId}");
 
                 File.Delete(file.FullName);
 
-                logger.LogInformation($"delete local message file complete,eventId:{@event.EventId}");
+                _logger.LogInformation($"delete local message file complete,eventId:{@event.EventId}");
             }
         }
 
         void LocalMessageSendHandler()
         {
-            var logger = GetLogger(LoggerSubCategories.LocalMessageSendHandler);
-
             while (true)
             {
                 Thread.CurrentThread.Join(LocalMessageOnceHandlerWaitMilliSencods);
@@ -439,7 +383,7 @@ namespace EnigmaNet.RabbitMQBus
                 }
                 catch (Exception ex)
                 {
-                    logger.LogError(ex, "once handler error");
+                    _logger.LogError(ex, "once handler error");
                     Thread.CurrentThread.Join(ErrorWaitTime);
                 }
             }
@@ -451,13 +395,17 @@ namespace EnigmaNet.RabbitMQBus
 
         #region publish
 
-        public IOptions<RabbitMQEventBusOptions> Options { get; set; }
-
-        public ILoggerFactory LoggerFactory { get; set; }
+        public RabbitMQEventBus(ILogger<RabbitMQEventBus> logger,
+            IOptions<RabbitMQEventBusOptions> options
+            )
+        {
+            _logger = logger;
+            _optionValue = options.Value;
+        }
 
         public Task PublishAsync<T>(T @event) where T : Event
         {
-            var logger = GetLogger();
+            var logger = _logger;
 
             var eventType = @event.GetType();
 
@@ -488,11 +436,6 @@ namespace EnigmaNet.RabbitMQBus
             }
             catch (Exception ex)
             {
-                if (string.IsNullOrEmpty(Options.Value.FailMessageStoreFolder))
-                {
-                    throw;
-                }
-
                 logger.LogError(ex, $"send message error,save message to local,messageId:{@event.EventId}");
 
                 SaveMessageToLocal(@event.EventId, messageString);
@@ -503,12 +446,13 @@ namespace EnigmaNet.RabbitMQBus
 
         public Task SubscribeAsync<T>(IEventHandler<T> handler) where T : Event
         {
-            var logger = GetInitLogger();
-
             var eventType = typeof(T);
             var handlerType = handler.GetType();
 
-            logger.LogDebug($"Subscribe,eventType:{eventType} handlerType:{handlerType}");
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug($"Subscribe,eventType:{eventType} handlerType:{handlerType}");
+            }
 
             if (!_handlerToEvents.ContainsKey(handlerType))
             {
@@ -544,14 +488,11 @@ namespace EnigmaNet.RabbitMQBus
                 thread.Start(handler);
             }
 
-            if (!string.IsNullOrEmpty(Options.Value.FailMessageStoreFolder))
+            //start LocalMessageSendHandler
             {
-                //start LocalMessageSendHandler
-                {
-                    var thread = new Thread(new ThreadStart(LocalMessageSendHandler));
-                    thread.IsBackground = true;
-                    thread.Start();
-                }
+                var thread = new Thread(new ThreadStart(LocalMessageSendHandler));
+                thread.IsBackground = true;
+                thread.Start();
             }
         }
 
