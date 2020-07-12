@@ -40,13 +40,84 @@ namespace EnigmaNet.DouYinOpenApi
 
         Task DeleteVideoAsync(string openId, string accessToken, string itemId);
 
+        /// <summary>
+        /// 获取视频评论列表（企业号）
+        /// </summary>
+        /// <param name="openId"></param>
+        /// <param name="accessToken"></param>
+        /// <param name="itemId"></param>
+        /// <param name="pageSize"></param>
+        /// <param name="cursor"></param>
+        /// <returns></returns>
         Task<Models.Video.CommentListResult> GetVideoCommentListAsync(string openId, string accessToken, string itemId, int pageSize, long? cursor);
 
+        /// <summary>
+        /// 获取视频评论回复列表（企业号）
+        /// </summary>
+        /// <param name="openId"></param>
+        /// <param name="accessToken"></param>
+        /// <param name="itemId"></param>
+        /// <param name="commentId"></param>
+        /// <param name="pageSize"></param>
+        /// <param name="cursor"></param>
+        /// <returns></returns>
         Task<Models.Video.CommentListResult> GetVideoCommentReplyListAsync(string openId, string accessToken, string itemId, string commentId, int pageSize, long? cursor);
 
+        /// <summary>
+        /// 回复视频的评论（企业号）
+        /// </summary>
+        /// <param name="openId"></param>
+        /// <param name="accessToken"></param>
+        /// <param name="itemId"></param>
+        /// <param name="commentId"></param>
+        /// <param name="content"></param>
+        /// <returns></returns>
         Task ReplyVideoCommentAsync(string openId, string accessToken, string itemId, string commentId, string content);
 
+        /// <summary>
+        /// 设置视频置顶（企业号）
+        /// </summary>
+        /// <param name="openId"></param>
+        /// <param name="accessToken"></param>
+        /// <param name="itemId"></param>
+        /// <param name="commentId"></param>
+        /// <param name="isTop"></param>
+        /// <returns></returns>
         Task SetVideoCommentTopStatusAsync(string openId, string accessToken, string itemId, string commentId, bool isTop);
+
+        /// <summary>
+        /// 获取普通用户视频评论列表
+        /// </summary>
+        /// <param name="openId"></param>
+        /// <param name="accessToken"></param>
+        /// <param name="itemId"></param>
+        /// <param name="pageSize"></param>
+        /// <param name="cursor"></param>
+        /// <returns></returns>
+        Task<Models.Video.CommentListResult> GetGeneralUserVideoCommentListAsync(string openId, string accessToken, string itemId, int pageSize, long? cursor);
+
+        /// <summary>
+        /// 获取普通用户视频评论回复列表
+        /// </summary>
+        /// <param name="openId"></param>
+        /// <param name="accessToken"></param>
+        /// <param name="itemId"></param>
+        /// <param name="commentId"></param>
+        /// <param name="pageSize"></param>
+        /// <param name="cursor"></param>
+        /// <returns></returns>
+        Task<Models.Video.CommentListResult> GetGeneralUserVideoCommentReplyListAsync(string openId, string accessToken, string itemId, string commentId, int pageSize, long? cursor);
+
+        /// <summary>
+        /// 回复普通用户视频的评论
+        /// </summary>
+        /// <param name="openId"></param>
+        /// <param name="accessToken"></param>
+        /// <param name="itemId"></param>
+        /// <param name="commentId"></param>
+        /// <param name="content"></param>
+        /// <returns></returns>
+        Task ReplyGeneralUserVideoCommentAsync(string openId, string accessToken, string itemId, string commentId, string content);
 
         Task SendIMMessageAsync(string openId, string accessToken, string toUserId, bool isImageMessage, string messageContent);
 

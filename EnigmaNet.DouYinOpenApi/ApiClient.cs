@@ -1076,6 +1076,157 @@ namespace EnigmaNet.DouYinOpenApi
             ThrowExceptionIfError(result);
         }
 
+
+        public async Task<CommentListResult> GetGeneralUserVideoCommentListAsync(string openId, string accessToken, string itemId, int pageSize, long? cursor)
+        {
+            var logger = LoggerFactory.CreateLogger<ApiClient>();
+
+            var url = Api + "/item/comment/list/"
+               .AddQueryParam("access_token", accessToken)
+               .AddQueryParam("open_id", openId)
+               .AddQueryParam("cursor", (cursor ?? 0).ToString())
+               .AddQueryParam("count", pageSize)
+               .AddQueryParam("item_id", itemId);
+
+            if (logger.IsEnabled(LogLevel.Trace))
+            {
+                logger.LogTrace($"GetGeneralUserVideoCommentListAsync,url:{url}");
+            }
+
+            DefaultResultModel<VideoCommentListModel> result;
+            using (var httpClient = new HttpClient())
+            {
+                var response = await httpClient.GetAsync(url);
+
+                if (logger.IsEnabled(LogLevel.Trace))
+                {
+                    logger.LogTrace($"GetGeneralUserVideoCommentListAsync,url:{url} statusCode:{response.StatusCode}");
+
+                    var content = await response.Content.ReadAsStringAsync();
+                    logger.LogTrace($"GetGeneralUserVideoCommentListAsync,url:{url} content:{content}");
+                }
+
+                result = await response.Content.ReadAsAsync<DefaultResultModel<VideoCommentListModel>>();
+            }
+
+            var data = result.data;
+            ThrowExceptionIfError(data);
+
+            return new CommentListResult
+            {
+                Cursor = data.cursor,
+                HasMore = data.has_more,
+                List = data.list?.Select(m => new CommentInfo
+                {
+                    CommentId = m.comment_id,
+                    CommentUserId = m.comment_user_id,
+                    Content = m.content,
+                    CreateTime = DateTimeUtils.ToDateTime(m.create_time),
+                    DiggCount = m.digg_count,
+                    IsTop = m.top,
+                    ReplyTotal = m.reply_comment_total,
+                }).ToList(),
+            };
+        }
+
+        public async Task<CommentListResult> GetGeneralUserVideoCommentReplyListAsync(string openId, string accessToken, string itemId, string commentId, int pageSize, long? cursor)
+        {
+            var logger = LoggerFactory.CreateLogger<ApiClient>();
+
+            var url = Api + "/item/comment/reply/list/"
+                .AddQueryParam("access_token", accessToken)
+                .AddQueryParam("open_id", openId)
+                .AddQueryParam("cursor", (cursor ?? 0).ToString())
+                .AddQueryParam("count", pageSize)
+                .AddQueryParam("item_id", itemId)
+                .AddQueryParam("comment_id", commentId);
+
+            if (logger.IsEnabled(LogLevel.Trace))
+            {
+                logger.LogTrace($"GetGeneralUserVideoCommentReplyListAsync,url:{url}");
+            }
+
+            DefaultResultModel<VideoCommentListModel> result;
+            using (var httpClient = new HttpClient())
+            {
+                var response = await httpClient.GetAsync(url);
+
+                if (logger.IsEnabled(LogLevel.Trace))
+                {
+                    logger.LogTrace($"GetGeneralUserVideoCommentReplyListAsync,url:{url} statusCode:{response.StatusCode}");
+
+                    var content = await response.Content.ReadAsStringAsync();
+                    logger.LogTrace($"GetGeneralUserVideoCommentReplyListAsync,url:{url} content:{content}");
+                }
+
+                result = await response.Content.ReadAsAsync<DefaultResultModel<VideoCommentListModel>>();
+            }
+
+            var data = result.data;
+            ThrowExceptionIfError(data);
+
+            return new CommentListResult
+            {
+                Cursor = data.cursor,
+                HasMore = data.has_more,
+                List = data.list?.Select(m => new CommentInfo
+                {
+                    CommentId = m.comment_id,
+                    CommentUserId = m.comment_user_id,
+                    Content = m.content,
+                    CreateTime = DateTimeUtils.ToDateTime(m.create_time),
+                    DiggCount = m.digg_count,
+                    IsTop = m.top,
+                    ReplyTotal = m.reply_comment_total,
+                }).ToList(),
+            };
+        }
+
+        public async Task ReplyGeneralUserVideoCommentAsync(string openId, string accessToken, string itemId, string commentId, string content)
+        {
+            if (string.IsNullOrEmpty(content))
+            {
+                throw new ArgumentNullException(nameof(content));
+            }
+
+            var logger = LoggerFactory.CreateLogger<ApiClient>();
+
+            var url = Api + "/item/comment/reply/"
+               .AddQueryParam("access_token", accessToken)
+               .AddQueryParam("open_id", openId);
+
+            if (logger.IsEnabled(LogLevel.Trace))
+            {
+                logger.LogTrace($"ReplyGeneralUserVideoCommentAsync,url:{url}");
+            }
+
+            CommonResultModel result;
+            using (var httpClient = new HttpClient())
+            {
+                var response = await httpClient.PostAsJsonAsync(url, new
+                {
+                    item_id = itemId,
+                    comment_id = commentId,
+                    content = content,
+                });
+
+                if (logger.IsEnabled(LogLevel.Trace))
+                {
+                    var requestContent = await response.RequestMessage.Content.ReadAsStringAsync();
+                    logger.LogTrace($"ReplyGeneralUserVideoCommentAsync,url:{url} requestContent:{requestContent}");
+
+                    logger.LogTrace($"ReplyGeneralUserVideoCommentAsync,url:{url} statusCode:{response.StatusCode}");
+
+                    var responseContent = await response.Content.ReadAsStringAsync();
+                    logger.LogTrace($"ReplyGeneralUserVideoCommentAsync,url:{url} responseContent:{responseContent}");
+                }
+
+                result = await response.Content.ReadAsAsync<CommonResultModel>();
+            }
+
+            ThrowExceptionIfError(result);
+        }
+
         public async Task SendIMMessageAsync(string openId, string accessToken, string toUserId, bool isImageMessage, string messageContent)
         {
             if (string.IsNullOrEmpty(messageContent))
