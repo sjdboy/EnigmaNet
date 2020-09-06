@@ -14,19 +14,32 @@ namespace EnigmaNet.AspNet.Extensions
 
         public static bool IsIPhone(this HttpRequest httpRequest)
         {
-            var userAgent = httpRequest.GetUserAgent();
+            var userAgent = httpRequest.GetUserAgent(); if (string.IsNullOrEmpty(userAgent))
+            {
+                return false;
+            }
+
             return userAgent.Contains("iPhone") || userAgent.Contains("iphone");
         }
 
         public static bool IsAndroid(this HttpRequest httpRequest)
         {
             var userAgent = httpRequest.GetUserAgent();
+            if (string.IsNullOrEmpty(userAgent))
+            {
+                return false;
+            }
+
             return userAgent.Contains("Android") || userAgent.Contains("android");
         }
 
         public static bool IsMicroMessager(this HttpRequest httpRequest)
         {
             var userAgent = httpRequest.GetUserAgent();
+            if (string.IsNullOrEmpty(userAgent))
+            {
+                return false;
+            }
 
             return userAgent.Contains("MicroMessenger")
                 && !userAgent.Contains("wxwork") //非企业微信
@@ -36,6 +49,10 @@ namespace EnigmaNet.AspNet.Extensions
         public static bool IsMiniProgram(this HttpRequest httpRequest)
         {
             var userAgent = httpRequest.GetUserAgent();
+            if (string.IsNullOrEmpty(userAgent))
+            {
+                return false;
+            }
 
             return userAgent.Contains("miniProgram");
         }
@@ -43,6 +60,10 @@ namespace EnigmaNet.AspNet.Extensions
         public static bool IsWxWork(this HttpRequest httpRequest)
         {
             var userAgent = httpRequest.GetUserAgent();
+            if (string.IsNullOrEmpty(userAgent))
+            {
+                return false;
+            }
 
             return userAgent.Contains("wxwork");
         }
