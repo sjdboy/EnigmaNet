@@ -11,18 +11,22 @@ namespace EnigmaNet.Exceptions
     /// </summary>
     public class BizException : Exception
     {
+        public string ErrorCode { get; set; }
+
         public BizException()
         {
         }
 
-        public BizException(string message)
+        public BizException(string message,string errorCode=null)
             : base(message)
         {
+            ErrorCode = errorCode;
         }
 
-        public BizException(string message, Exception innerException)
+        public BizException(string message, Exception innerException, string errorCode = null)
             : base(message, innerException)
         {
+            ErrorCode = errorCode;
         }
     }
 }

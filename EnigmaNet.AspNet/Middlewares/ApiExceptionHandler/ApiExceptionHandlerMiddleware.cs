@@ -91,6 +91,7 @@ namespace EnigmaNet.AspNet.Middlewares.ApiExceptionHandler
                         var messageString = JsonConvert.SerializeObject(
                             new MessageModel
                             {
+                                Code = biz.ErrorCode,
                                 Message = biz.Message
                             },
                             new JsonSerializerSettings
