@@ -31,8 +31,6 @@ namespace EnigmaNet.RabbitMQBus
         ILogger _logger;
         RabbitMQEventBusOptions _optionValue;
 
-        const int LocalMessageOnceHandlerWaitMilliSencods = 1000 * 60;
-
         ConcurrentDictionary<Type, ConcurrentBag<Type>> _handlerToEvents = new ConcurrentDictionary<Type, ConcurrentBag<Type>>();
         ConcurrentDictionary<Type, object> _handlers = new ConcurrentDictionary<Type, object>();
         ConcurrentDictionary<Type, bool> _buildedQueues = new ConcurrentDictionary<Type, bool>();
@@ -281,114 +279,6 @@ namespace EnigmaNet.RabbitMQBus
             }
         }
 
-        string GetFailMessageFolderPath()
-        {
-            if (string.IsNullOrEmpty(_optionValue.FailMessageStoreFolder))
-            {
-                return Path.Combine(System.AppContext.BaseDirectory, "\\bus_fail_events");
-            }
-
-            string folderPath;
-            if (Path.IsPathRooted(_optionValue.FailMessageStoreFolder))
-            {
-                folderPath = _optionValue.FailMessageStoreFolder;
-            }
-            else
-            {
-                folderPath = Path.Combine(System.AppContext.BaseDirectory, _optionValue.FailMessageStoreFolder);
-            }
-
-            return folderPath;
-        }
-
-        void SaveMessageToLocal(string eventId, string messageString)
-        {
-            var folderPath = GetFailMessageFolderPath();
-            if (!Directory.Exists(folderPath))
-            {
-                Directory.CreateDirectory(folderPath);
-            }
-
-            var filePath = Path.Combine(folderPath, $"{eventId}.json");
-
-            File.WriteAllText(filePath, messageString, Encoding.UTF8);
-
-            if (_logger.IsEnabled(LogLevel.Information))
-            {
-                _logger.LogInformation($"SaveMessageToLocal,filePath:{filePath} messageString:{messageString}");
-            }
-        }
-
-        void LocalMessageSendHandlerOnceHandler()
-        {
-            var folderPath = GetFailMessageFolderPath();
-            if (!Directory.Exists(folderPath))
-            {
-                Directory.CreateDirectory(folderPath);
-            }
-
-            var files = new DirectoryInfo(folderPath).GetFiles()?.OrderBy(m => m.CreationTime).ToList();
-
-            if (!(files?.Count > 0))
-            {
-                _logger.LogInformation("get local messages, empty");
-                return;
-            }
-
-            _logger.LogInformation($"get local messages, count:{files.Count}");
-
-            foreach (var file in files)
-            {
-                var messageString = File.ReadAllText(file.FullName, Encoding.UTF8);
-
-                var @event = (Event)JsonConvert.DeserializeObject(messageString, new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All });
-
-                try
-                {
-                    var eventType = @event.GetType();
-
-                    CreateExchangeIfNot(eventType);
-
-                    using (var channel = GetConnection().CreateModel())
-                    {
-                        var properties = CreateProperties(channel);
-                        var exchangeName = GetExchangeName(eventType);
-                        channel.BasicPublish(exchangeName, string.Empty, properties, Encoding.UTF8.GetBytes(messageString));
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, $"send message error,skip,eventId:{@event.EventId}");
-                    Thread.CurrentThread.Join(ErrorWaitTime);
-                    continue;
-                }
-
-                _logger.LogInformation($"send local message complete,eventId:{@event.EventId}");
-
-                File.Delete(file.FullName);
-
-                _logger.LogInformation($"delete local message file complete,eventId:{@event.EventId}");
-            }
-        }
-
-        void LocalMessageSendHandler()
-        {
-            while (true)
-            {
-                Thread.CurrentThread.Join(LocalMessageOnceHandlerWaitMilliSencods);
-
-                try
-                {
-                    LocalMessageSendHandlerOnceHandler();
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "once handler error");
-                    Thread.CurrentThread.Join(ErrorWaitTime);
-                }
-            }
-        }
-
         #endregion
 
         #endregion
@@ -418,27 +308,18 @@ namespace EnigmaNet.RabbitMQBus
                 logger.LogDebug($"Publish event,prev send, exchangeName:{exchangeName} messageString:{messageString}");
             }
 
-            try
+            CreateExchangeIfNot(eventType);
+
+            using (var channel = GetConnection().CreateModel())
             {
-                CreateExchangeIfNot(eventType);
+                var properties = CreateProperties(channel);
 
-                using (var channel = GetConnection().CreateModel())
-                {
-                    var properties = CreateProperties(channel);
-
-                    channel.BasicPublish(exchangeName, string.Empty, properties, Encoding.UTF8.GetBytes(messageString));
-                }
-
-                if (logger.IsEnabled(LogLevel.Debug))
-                {
-                    logger.LogDebug($"PublishAsync,send completed");
-                }
+                channel.BasicPublish(exchangeName, string.Empty, properties, Encoding.UTF8.GetBytes(messageString));
             }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, $"send message error,save message to local,messageId:{@event.EventId}");
 
-                SaveMessageToLocal(@event.EventId, messageString);
+            if (logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.LogDebug($"PublishAsync,send completed");
             }
 
             return Task.CompletedTask;
@@ -486,13 +367,6 @@ namespace EnigmaNet.RabbitMQBus
                 var thread = new Thread(new ParameterizedThreadStart(StartHandler));
                 thread.IsBackground = true;
                 thread.Start(handler);
-            }
-
-            //start LocalMessageSendHandler
-            {
-                var thread = new Thread(new ThreadStart(LocalMessageSendHandler));
-                thread.IsBackground = true;
-                thread.Start();
             }
         }
 
