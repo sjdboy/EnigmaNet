@@ -9,12 +9,12 @@ namespace EnigmaNet.Redis.Impl
 {
     public class RedisFactory : IRedisFactory
     {
-        ConnectionMultiplexer _connectionMultiplexer;
+        IConnectionMultiplexer _connectionMultiplexer;
         object _connectionMultiplexerLocker = new object();
         string _configurationString;
         ILogger _logger;
 
-        ConnectionMultiplexer ConnectionMultiplexer
+        IConnectionMultiplexer ConnectionMultiplexer
         {
             get
             {
@@ -25,7 +25,7 @@ namespace EnigmaNet.Redis.Impl
                         if (_connectionMultiplexer == null)
                         {
                             Logger.LogInformation("init ConnectionMultiplexer");
-                            _connectionMultiplexer = ConnectionMultiplexer.Connect(_configurationString);
+                            _connectionMultiplexer = StackExchange.Redis.ConnectionMultiplexer.Connect(_configurationString);
                             _connectionMultiplexer.ConfigurationChangedBroadcast += _connectionMultiplexer_ConfigurationChangedBroadcast;
                             _connectionMultiplexer.ErrorMessage += _connectionMultiplexer_ErrorMessage;
                             _connectionMultiplexer.ConnectionFailed += _connectionMultiplexer_ConnectionFailed;
@@ -91,9 +91,35 @@ namespace EnigmaNet.Redis.Impl
 
         public ILoggerFactory LoggerFactory { get; set; }
 
-        public string ConfigurationString { set { _configurationString = value; } }
+        public virtual string ConfigurationString
+        {
+            set
+            {
+                IConnectionMultiplexer tempObject;
 
-        public IDatabase GetDatabase()
+                lock (_connectionMultiplexerLocker)
+                {
+                    _configurationString = value;
+                    if (_connectionMultiplexer != null)
+                    {
+                        tempObject = _connectionMultiplexer;
+                        _connectionMultiplexer = null;
+                    }
+                    else
+                    {
+                        tempObject = null;
+                    }
+                }
+
+                if (tempObject!=null && tempObject.IsConnected)
+                {
+                    tempObject.Close();
+                    tempObject.Dispose();
+                }
+            }
+        }
+
+        public virtual IDatabase GetDatabase()
         {
             return ConnectionMultiplexer.GetDatabase(-1, new object());
         }
