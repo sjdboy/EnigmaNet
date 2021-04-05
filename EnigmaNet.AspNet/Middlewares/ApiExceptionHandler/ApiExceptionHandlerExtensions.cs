@@ -11,7 +11,7 @@ namespace EnigmaNet.AspNet.Middlewares.ApiExceptionHandler
     {
         public static IApplicationBuilder UseApiExceptionHandler(this IApplicationBuilder app, params string[] apiPathPrefixs)
         {
-            return app.MapWhen(
+            return app.UseWhen(
                 context =>
                 {
                     var requestPath = context.Request.Path.ToString();
