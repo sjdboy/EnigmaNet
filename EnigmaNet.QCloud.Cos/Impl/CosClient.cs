@@ -1,36 +1,31 @@
-﻿using EnigmaNet.Exceptions;
-using EnigmaNet.Extensions;
-using EnigmaNet.QCloud.Cos.Models;
-using EnigmaNet.Utils;
-using Microsoft.Extensions.Logging;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+
+using EnigmaNet.Exceptions;
+using EnigmaNet.Extensions;
+using EnigmaNet.QCloud.Cos.Models;
+using EnigmaNet.QCloud.Cos.Options;
+using EnigmaNet.Utils;
 
 namespace EnigmaNet.QCloud.Cos.Impl
 {
     public class CosClient : ICosClient
     {
-        ILogger _log;
-        ILogger Logger
-        {
-            get
-            {
-                if (_log == null)
-                {
-                    _log = LoggerFactory.CreateLogger<CosClient>();
-                }
-                return _log;
-            }
-        }
+        #region private
 
         const int DefaultExpiredSeconds = 60 * 60;
         const int CosApiValidMinutes = 10;
         const int UploadBufferSize = 1024 * 1024;
+
+        ILogger _logger;
+        QCloudCosOptions _options;
 
         string HmacSha1(string key, string text)
         {
@@ -65,7 +60,7 @@ namespace EnigmaNet.QCloud.Cos.Impl
                 var httpStringHttpHeaders2 = string.Empty;
                 var httpStringHttpParameters2 = string.Empty;
 
-                var signTimeSign = HmacSha1(SecretKey, qSignTime);
+                var signTimeSign = HmacSha1(_options.SecretKey, qSignTime);
                 var httpStringSha1 = Sha1Hex($"{method}\n{path}\n{httpStringHttpParameters2}\n{httpStringHttpHeaders2}\n");
                 signture = HmacSha1(signTimeSign, $"{httpAlgorithm}\n{qSignTime}\n{httpStringSha1}\n");
             }
@@ -76,7 +71,7 @@ namespace EnigmaNet.QCloud.Cos.Impl
                 var httpStringHttpParameters = string.Empty;
 
                 authData.Add("q-sign-algorithm", httpAlgorithm);
-                authData.Add("q-ak", SecretId);
+                authData.Add("q-ak", _options.SecretId);
                 authData.Add("q-sign-time", qSignTime);
                 authData.Add("q-key-time", qSignTime);
                 authData.Add("q-header-list", httpStringHttpHeaders);
@@ -89,10 +84,10 @@ namespace EnigmaNet.QCloud.Cos.Impl
 
         string GetDownloadAuthoritionKey(string filePath, DateTime? expired)
         {
-            var bucket = Bucket;
-            var appId = AppId;
-            var secretId = SecretId;
-            var secretKey = SecretKey;
+            var bucket = _options.Bucket;
+            var appId = _options.AppId;
+            var secretId = _options.SecretId;
+            var secretKey = _options.SecretKey;
 
             int e;
             if (expired.HasValue)
@@ -123,27 +118,33 @@ namespace EnigmaNet.QCloud.Cos.Impl
         string GetCDNHost()
         {
             //ny01-1253908385.file.myqcloud.com
-            return $"{Bucket}-{AppId}.file.myqcloud.com";
+            return $"{_options.Bucket}-{_options.AppId}.file.myqcloud.com";
         }
 
         string GetImageCDNHost()
         {
             //ny01-1253908385.image.myqcloud.com
-            return $"{Bucket}-{AppId}.image.myqcloud.com";
+            return $"{_options.Bucket}-{_options.AppId}.image.myqcloud.com";
         }
 
         string GetCosHost()
         {
             // ny01-1253908385.cos.ap-shanghai.myqcloud.com
-            return $"{Bucket}-{AppId}.cos.{Region}.myqcloud.com";
+            return $"{_options.Bucket}-{_options.AppId}.cos.{_options.Region}.myqcloud.com";
         }
 
-        public string SecretId { get; set; }
-        public string SecretKey { get; set; }
-        public string Bucket { get; set; }
-        public string AppId { get; set; }
-        public string Region { get; set; }
-        public ILoggerFactory LoggerFactory { get; set; }
+        #endregion
+
+        public CosClient(ILogger logger, IOptionsMonitor<QCloudCosOptions> options)
+        {
+            _logger = logger;
+
+            _options = options.CurrentValue;
+            options.OnChange(newValue =>
+            {
+                _options = newValue;
+            });
+        }
 
         public async Task CopyObjectAsync(string sourcePath, string targetPath)
         {
@@ -177,7 +178,7 @@ namespace EnigmaNet.QCloud.Cos.Impl
             var authorization = CreateAuthorization(path, HttpMethod.Put, DateTime.Now, DateTime.Now.AddMinutes(CosApiValidMinutes));
             var url = $"https://{host}{path}";
 
-            Logger.LogDebug($"prepare to copy object,url:{url} source:{sourcePath}");
+            _logger.LogDebug($"prepare to copy object,url:{url} source:{sourcePath}");
 
             var request = WebRequest.Create(url);
             {
@@ -190,7 +191,7 @@ namespace EnigmaNet.QCloud.Cos.Impl
                 {
                     var errorContent = await response.ReadAsStringAsync();
 
-                    Logger.LogError($"copy object fail,url:{url} source:{sourcePath} response:{response.StatusCode} {errorContent}");
+                    _logger.LogError($"copy object fail,url:{url} source:{sourcePath} response:{response.StatusCode} {errorContent}");
 
                     throw new BizException("复制云文件出错");
                 }
@@ -213,7 +214,7 @@ namespace EnigmaNet.QCloud.Cos.Impl
             var authorization = CreateAuthorization(path, HttpMethod.Delete, DateTime.Now, DateTime.Now.AddMinutes(CosApiValidMinutes));
             var url = $"https://{host}{path}";
 
-            Logger.LogDebug($"prepare to delete object:{url}");
+            _logger.LogDebug($"prepare to delete object:{url}");
 
             var request = WebRequest.Create(url);
             {
@@ -224,7 +225,7 @@ namespace EnigmaNet.QCloud.Cos.Impl
                 {
                     var errorContent = await response.ReadAsStringAsync();
 
-                    Logger.LogError($"delete object fail,url:{url} response:{response.StatusCode} {errorContent}");
+                    _logger.LogError($"delete object fail,url:{url} response:{response.StatusCode} {errorContent}");
 
                     throw new BizException("删除云文件出错");
                 }
@@ -322,7 +323,7 @@ namespace EnigmaNet.QCloud.Cos.Impl
             var authorization = CreateAuthorization(path, HttpMethod.Head, DateTime.Now, DateTime.Now.AddMinutes(CosApiValidMinutes));
             var url = $"https://{host}{path}";
 
-            Logger.LogDebug($"prepare to head object:{url}");
+            _logger.LogDebug($"prepare to head object:{url}");
 
             var request = WebRequest.Create(url);
             {
@@ -333,7 +334,7 @@ namespace EnigmaNet.QCloud.Cos.Impl
                 {
                     var errorContent = await response.ReadAsStringAsync();
 
-                    Logger.LogError($"head object fail,url:{url} response:{response.StatusCode} {errorContent}");
+                    _logger.LogError($"head object fail,url:{url} response:{response.StatusCode} {errorContent}");
 
                     throw new BizException("获取文件信息出错");
                 }
@@ -365,7 +366,7 @@ namespace EnigmaNet.QCloud.Cos.Impl
             var authorization = CreateAuthorization(path, HttpMethod.Put, DateTime.Now, expiredDateTime);
             var url = $"https://{host}{path}";
 
-            Logger.LogDebug($"prepare to copy object,url:{url} path:{path}");
+            _logger.LogDebug($"prepare to copy object,url:{url} path:{path}");
 
             var request = WebRequest.Create(url);
             {
@@ -395,7 +396,7 @@ namespace EnigmaNet.QCloud.Cos.Impl
                 {
                     var errorContent = await response.ReadAsStringAsync();
 
-                    Logger.LogError($"copy object fail,url:{url} path:{path} response:{response.StatusCode} {errorContent}");
+                    _logger.LogError($"copy object fail,url:{url} path:{path} response:{response.StatusCode} {errorContent}");
 
                     throw new BizException("上传文件出错");
                 }
@@ -421,9 +422,9 @@ namespace EnigmaNet.QCloud.Cos.Impl
 
             return Task.FromResult(new UploadInfoModel
             {
-                Bucket = Bucket,
-                AppId = AppId,
-                Region = Region,
+                Bucket = _options.Bucket,
+                AppId = _options.AppId,
+                Region = _options.Region,
                 UploadUrl = $"https://{GetCosHost()}{path}",
                 Authorization = CreateAuthorization(path, httpMethod, DateTime.Now, DateTime.Now.Add(expiredTimeSpan.Value)),
             });
