@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using Microsoft.Extensions.Logging;
-
+using Microsoft.Extensions.Options;
 using StackExchange.Redis;
 
 namespace EnigmaNet.Redis.Impl
@@ -12,7 +12,6 @@ namespace EnigmaNet.Redis.Impl
         IConnectionMultiplexer _connectionMultiplexer;
         object _connectionMultiplexerLocker = new object();
         string _configurationString;
-        ILogger _logger;
 
         IConnectionMultiplexer ConnectionMultiplexer
         {
@@ -24,7 +23,7 @@ namespace EnigmaNet.Redis.Impl
                     {
                         if (_connectionMultiplexer == null)
                         {
-                            Logger.LogInformation("init ConnectionMultiplexer");
+                            _logger.LogInformation("init ConnectionMultiplexer");
                             _connectionMultiplexer = StackExchange.Redis.ConnectionMultiplexer.Connect(_configurationString);
                             _connectionMultiplexer.ConfigurationChangedBroadcast += _connectionMultiplexer_ConfigurationChangedBroadcast;
                             _connectionMultiplexer.ErrorMessage += _connectionMultiplexer_ErrorMessage;
@@ -41,55 +40,42 @@ namespace EnigmaNet.Redis.Impl
             }
         }
 
-        ILogger Logger
-        {
-            get
-            {
-                if (_logger == null)
-                {
-                    _logger = LoggerFactory.CreateLogger<RedisFactory>();
-                }
+        ILogger _logger;
 
-                return _logger;
-            }
+        void _connectionMultiplexer_HashSlotMoved(object sender, HashSlotMovedEventArgs e)
+        {
+            _logger?.LogInformation($"HashSlotMoved,HashSlot:{e.HashSlot} OldEndPoint:{e.OldEndPoint} NewEndPoint:{e.NewEndPoint}");
         }
 
-        private void _connectionMultiplexer_HashSlotMoved(object sender, HashSlotMovedEventArgs e)
+        void _connectionMultiplexer_ConnectionRestored(object sender, ConnectionFailedEventArgs e)
         {
-            Logger?.LogInformation($"HashSlotMoved,HashSlot:{e.HashSlot} OldEndPoint:{e.OldEndPoint} NewEndPoint:{e.NewEndPoint}");
+            _logger?.LogError(e.Exception, $"ConnectionRestored,ConnectionType:{e.ConnectionType} EndPoint:{e.EndPoint} FailureType:{e.FailureType} Exception:{e.Exception.Message}");
         }
 
-        private void _connectionMultiplexer_ConnectionRestored(object sender, ConnectionFailedEventArgs e)
+        void _connectionMultiplexer_InternalError(object sender, InternalErrorEventArgs e)
         {
-            Logger?.LogError(e.Exception, $"ConnectionRestored,ConnectionType:{e.ConnectionType} EndPoint:{e.EndPoint} FailureType:{e.FailureType} Exception:{e.Exception.Message}");
+            _logger?.LogError(e.Exception, $"InternalError,ConnectionType:{e.ConnectionType} EndPoint:{e.EndPoint} Origin:{e.Origin} Exception:{e.Exception.Message}");
         }
 
-        private void _connectionMultiplexer_InternalError(object sender, InternalErrorEventArgs e)
+        void _connectionMultiplexer_ConnectionFailed(object sender, ConnectionFailedEventArgs e)
         {
-            Logger?.LogError(e.Exception, $"InternalError,ConnectionType:{e.ConnectionType} EndPoint:{e.EndPoint} Origin:{e.Origin} Exception:{e.Exception.Message}");
+            _logger?.LogError(e.Exception, $"ConnectionFailed,ConnectionType:{e.ConnectionType} EndPoint:{e.EndPoint} FailureType:{e.FailureType} Exception:{e.Exception.Message}");
         }
 
-        private void _connectionMultiplexer_ConnectionFailed(object sender, ConnectionFailedEventArgs e)
+        void _connectionMultiplexer_ErrorMessage(object sender, RedisErrorEventArgs e)
         {
-            Logger?.LogError(e.Exception, $"ConnectionFailed,ConnectionType:{e.ConnectionType} EndPoint:{e.EndPoint} FailureType:{e.FailureType} Exception:{e.Exception.Message}");
+            _logger?.LogError($"ErrorMessage,EndPoint:{e.EndPoint} Message:{e.Message}");
         }
 
-        private void _connectionMultiplexer_ErrorMessage(object sender, RedisErrorEventArgs e)
+        void _connectionMultiplexer_ConfigurationChangedBroadcast(object sender, EndPointEventArgs e)
         {
-            Logger?.LogError($"ErrorMessage,EndPoint:{e.EndPoint} Message:{e.Message}");
+            _logger?.LogInformation($"ConfigurationChangedBroadcast,EndPoint:{e.EndPoint}");
         }
 
-        private void _connectionMultiplexer_ConfigurationChangedBroadcast(object sender, EndPointEventArgs e)
+        void _connectionMultiplexer_ConfigurationChanged(object sender, EndPointEventArgs e)
         {
-            Logger?.LogInformation($"ConfigurationChangedBroadcast,EndPoint:{e.EndPoint}");
+            _logger?.LogInformation($"ConfigurationChanged,EndPoint:{e.EndPoint}");
         }
-
-        private void _connectionMultiplexer_ConfigurationChanged(object sender, EndPointEventArgs e)
-        {
-            Logger?.LogInformation($"ConfigurationChanged,EndPoint:{e.EndPoint}");
-        }
-
-        public ILoggerFactory LoggerFactory { get; set; }
 
         public virtual string ConfigurationString
         {
@@ -111,11 +97,26 @@ namespace EnigmaNet.Redis.Impl
                     }
                 }
 
-                if (tempObject!=null && tempObject.IsConnected)
+                if (tempObject != null && tempObject.IsConnected)
                 {
                     tempObject.Close();
                     tempObject.Dispose();
                 }
+            }
+        }
+
+        public RedisFactory(ILogger logger, IOptionsMonitor<Options.RedisOptions> options)
+        {
+            _logger = logger;
+
+            if (options != null)
+            {
+                ConfigurationString = options.CurrentValue.ConfigurationString;
+
+                options.OnChange(newValue =>
+                {
+                    ConfigurationString = newValue.ConfigurationString;
+                });
             }
         }
 
