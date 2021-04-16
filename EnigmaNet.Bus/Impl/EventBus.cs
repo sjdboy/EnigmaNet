@@ -199,10 +199,10 @@ namespace EnigmaNet.Bus.Impl
 
         #endregion
 
-        //public EventBus(ILoggerFactory loggerFactory)
-        //{
-        //    Log = loggerFactory.CreateLogger<EventBus>();
-        //}
+        public EventBus(ILoggerFactory loggerFactory)
+        {
+            LoggerFactory = loggerFactory;
+        }
 
         #region IEventPublisher
 
