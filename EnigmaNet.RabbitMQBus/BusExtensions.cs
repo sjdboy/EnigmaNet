@@ -16,10 +16,8 @@ namespace EnigmaNet.RabbitMQBus
         const string RabbitMQEventBusOptionsKey = "RabbitMQEventBusOptions";
         const string RabbitMQDelayMessageBusOptionsKey = "RabbitMQDelayMessageBusOptions";
 
-        public static IServiceCollection AddRabbitMQEventBus(this IServiceCollection service)
+        public static IServiceCollection AddRabbitMQEventBus(this IServiceCollection service, IConfiguration configuration)
         {
-            var configuration = service.BuildServiceProvider().GetRequiredService<IConfiguration>();
-
             service.Configure<RabbitMQEventBusOptions>(configuration.GetSection(RabbitMQEventBusOptionsKey));
 
             service.AddSingleton<RabbitMQEventBus>();
@@ -44,10 +42,8 @@ namespace EnigmaNet.RabbitMQBus
             return app;
         }
 
-        public static IServiceCollection AddRabbitMQDelayMessageBus(this IServiceCollection service)
+        public static IServiceCollection AddRabbitMQDelayMessageBus(this IServiceCollection service, IConfiguration configuration)
         {
-            var configuration = service.BuildServiceProvider().GetRequiredService<IConfiguration>();
-
             service.Configure<RabbitMQDelayMessageBusOptions>(configuration.GetSection(RabbitMQDelayMessageBusOptionsKey));
 
             service.AddSingleton<RabbitMQDelayMessageBus>();

@@ -14,10 +14,8 @@ namespace EnigmaNet.QCloud.Cos
     {
         public const string QCloudCosOptionsKey = "QCloudCosOptions";
 
-        public static IServiceCollection AddQCloudCos(this IServiceCollection service)
+        public static IServiceCollection AddQCloudCos(this IServiceCollection service, IConfiguration configuration)
         {
-            var configuration = service.BuildServiceProvider().GetRequiredService<IConfiguration>();
-
             service.Configure<QCloudCosOptions>(configuration.GetSection(QCloudCosOptionsKey));
 
             service.AddSingleton<ICosClient, Impl.CosClient>();
