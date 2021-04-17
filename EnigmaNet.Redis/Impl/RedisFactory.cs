@@ -105,7 +105,7 @@ namespace EnigmaNet.Redis.Impl
             }
         }
 
-        public RedisFactory(ILogger logger, IOptionsMonitor<Options.RedisOptions> options)
+        public RedisFactory(ILogger<RedisFactory> logger, IOptionsMonitor<Options.RedisOptions> options)
         {
             _logger = logger;
 

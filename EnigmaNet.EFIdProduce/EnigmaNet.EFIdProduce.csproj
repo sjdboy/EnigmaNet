@@ -10,6 +10,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\EnigmaNet.EF\EnigmaNet.EF.csproj" />
     <ProjectReference Include="..\EnigmaNet\EnigmaNet.csproj" />
   </ItemGroup>
 

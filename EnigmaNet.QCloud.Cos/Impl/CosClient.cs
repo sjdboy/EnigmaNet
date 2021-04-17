@@ -135,7 +135,7 @@ namespace EnigmaNet.QCloud.Cos.Impl
 
         #endregion
 
-        public CosClient(ILogger logger, IOptionsMonitor<QCloudCosOptions> options)
+        public CosClient(ILogger<CosClient> logger, IOptionsMonitor<QCloudCosOptions> options)
         {
             _logger = logger;
 
