@@ -36,7 +36,19 @@ namespace EnigmaNet.Bus
 
             foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
-                foreach (var type in assembly.GetTypes())
+                Type[] types;
+
+                try
+                {
+                    types = assembly.GetTypes();
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, $"get assembly types fail,assembly:{assembly.FullName}");
+                    continue;
+                }
+
+                foreach (var type in types)
                 {
                     if (type.GetInterfaces()?.Any(m => m.IsGenericType && m.GetGenericTypeDefinition() == typeof(ICommandHandler<,>)) == true)
                     {
