@@ -12,10 +12,8 @@ namespace EnigmaNet.Redis
     {
         const string RedisOptionsKey = "RedisOptions";
 
-        public static IServiceCollection AddRedis(this IServiceCollection service)
+        public static IServiceCollection AddRedis(this IServiceCollection service, IConfiguration configuration)
         {
-            var configuration = service.BuildServiceProvider().GetRequiredService<IConfiguration>();
-
             service.Configure<Options.RedisOptions>(configuration.GetSection(RedisOptionsKey));
 
             service.AddSingleton<IRedisFactory, Impl.RedisFactory>();
