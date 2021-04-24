@@ -127,6 +127,11 @@ namespace EnigmaNet.RabbitMQBus
 
             while (true)
             {
+                if (_stop)
+                {
+                    return;
+                }
+
                 var message = channel.BasicGet(queueName, false);
                 if (message == null)
                 {
@@ -264,6 +269,11 @@ namespace EnigmaNet.RabbitMQBus
             //handle message
             while (true)
             {
+                if (_stop)
+                {
+                    return;
+                }
+
                 try
                 {
                     using (var channel = GetConnection().CreateModel())
@@ -360,6 +370,8 @@ namespace EnigmaNet.RabbitMQBus
 
         public void Init()
         {
+            _logger.LogInformation("Init");
+
             //start bus handler
             foreach (var item in _handlers)
             {
@@ -367,7 +379,18 @@ namespace EnigmaNet.RabbitMQBus
                 var thread = new Thread(new ParameterizedThreadStart(StartHandler));
                 thread.IsBackground = true;
                 thread.Start(handler);
+
+                _logger.LogInformation($"Init,StartHandler,handler:{item.GetType()}");
             }
+        }
+
+        bool _stop;
+
+        public void StopEventHandlers()
+        {
+            _logger.LogInformation("StopEventHandlers,set stop flag to true.");
+
+            _stop = true;
         }
 
         #endregion

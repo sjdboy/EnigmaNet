@@ -27,16 +27,38 @@ namespace EnigmaNet.RabbitMQBus
             return service;
         }
 
+        public static IServiceCollection AddRabbitMQEventBusWithBufferPublisher(this IServiceCollection service, IConfiguration configuration)
+        {
+            service.Configure<RabbitMQEventBusOptions>(configuration.GetSection(RabbitMQEventBusOptionsKey));
+
+            service.AddSingleton<RabbitMQEventBus>();
+            service.AddSingleton<EventBufferPublisher>();
+            service.AddSingleton<IEventPublisher>(provider => provider.GetService<EventBufferPublisher>());
+            service.AddSingleton<IEventSubscriber>(provider => provider.GetService<RabbitMQEventBus>());
+
+            return service;
+        }
+
         public static IApplicationBuilder InitRabbitMQEventBus(this IApplicationBuilder app)
         {
-            var logger = app.ApplicationServices.GetService<ILoggerFactory>().CreateLogger(typeof(BusExtensions).FullName);
-
             var lifetime = app.ApplicationServices.GetRequiredService<IHostApplicationLifetime>();
 
             lifetime.ApplicationStarted.Register(() =>
             {
                 var rabbitMQEventBus = app.ApplicationServices.GetRequiredService<RabbitMQEventBus>();
                 rabbitMQEventBus.Init();
+            });
+
+            lifetime.ApplicationStopping.Register(() =>
+            {
+                var rabbitMQEventBus = app.ApplicationServices.GetRequiredService<RabbitMQEventBus>();
+                rabbitMQEventBus.StopEventHandlers();
+
+                var eventBufferPublisher = app.ApplicationServices.GetService<EventBufferPublisher>();
+                if (eventBufferPublisher != null)
+                {
+                    eventBufferPublisher.SendAllEvents();
+                }
             });
 
             return app;
@@ -55,8 +77,6 @@ namespace EnigmaNet.RabbitMQBus
 
         public static IApplicationBuilder InitRabbitMQDelayMessageBus(this IApplicationBuilder app)
         {
-            var logger = app.ApplicationServices.GetService<ILoggerFactory>().CreateLogger(typeof(BusExtensions).FullName);
-
             var lifetime = app.ApplicationServices.GetRequiredService<IHostApplicationLifetime>();
 
             lifetime.ApplicationStarted.Register(() =>
