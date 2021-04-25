@@ -44,6 +44,7 @@ namespace EnigmaNet.RabbitMQBus
 
         ConnectionFactory CreateMQConnectionFactory()
         {
+            _logger.LogInformation($"CreateMQConnectionFactory,host:{_optionValue.Host}");
             return new ConnectionFactory()
             {
                 UserName = _optionValue.UserName,
@@ -52,21 +53,38 @@ namespace EnigmaNet.RabbitMQBus
                 HostName = _optionValue.Host,
                 VirtualHost = _optionValue.VirtualHost,
                 AutomaticRecoveryEnabled = true,
+                RequestedHeartbeat = TimeSpan.FromSeconds(20),
             };
         }
 
         IConnection GetConnection()
         {
-            if (_connection != null)
-            {
-                return _connection;
-            }
+            _logger.LogInformation($"GetConnection,IsOpen:{_connection?.IsOpen}");
 
-            lock (_connectionLocker)
+            if (_connection == null || !_connection.IsOpen)
             {
-                if (_connection == null)
+                lock (_connectionLocker)
                 {
-                    _connection = CreateMQConnectionFactory().CreateConnection();
+                    if (_connection == null || !_connection.IsOpen)
+                    {
+                        _connection = CreateMQConnectionFactory().CreateConnection();
+                        _connection.ConnectionBlocked += (sender, e) =>
+                        {
+                            _logger.LogInformation($"ConnectionBlocked,reason:{e.Reason}");
+                        };
+                        _connection.CallbackException += (sender, e) =>
+                        {
+                            _logger.LogInformation(e.Exception, $"CallbackException, ex:{e.Exception}");
+                        };
+                        _connection.ConnectionUnblocked += (sender, e) =>
+                        {
+                            _logger.LogInformation($"ConnectionUnblocked");
+                        };
+                        _connection.ConnectionShutdown += (sender, e) =>
+                        {
+                            _logger.LogInformation($"ConnectionShutdown,ReplyCode:{e.ReplyCode} ReplyText:{e.ReplyText}");
+                        };
+                    }
                 }
             }
 
@@ -295,12 +313,42 @@ namespace EnigmaNet.RabbitMQBus
 
         #region publish
 
-        public RabbitMQEventBus(ILogger<RabbitMQEventBus> logger,
-            IOptions<RabbitMQEventBusOptions> options
-            )
+        public RabbitMQEventBus(ILogger<RabbitMQEventBus> logger, IOptionsMonitor<RabbitMQEventBusOptions> options)
         {
             _logger = logger;
-            _optionValue = options.Value;
+
+            _optionValue = options.CurrentValue;
+
+            options.OnChange(newValue =>
+            {
+                bool configChange =
+                    _optionValue.Host != newValue.Host ||
+                    _optionValue.UserName != newValue.UserName ||
+                    _optionValue.Password != newValue.Password ||
+                    _optionValue.Port != newValue.Port ||
+                    _optionValue.VirtualHost != newValue.VirtualHost;
+
+                _optionValue = newValue;
+
+                if (configChange)
+                {
+                    lock (_connectionLocker)
+                    {
+                        if (_connection != null)
+                        {
+                            var connection = _connection;
+                            _connection = null;
+
+                            _logger.LogInformation("options change => set _connection=null");
+
+                            connection.Close();
+                            connection.Dispose();
+
+                            _logger.LogInformation("options change => close old connection");
+                        }
+                    }
+                }
+            });
         }
 
         public Task PublishAsync<T>(T @event) where T : Event
