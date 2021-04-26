@@ -7,7 +7,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using EnigmaNet.Exceptions;
 
-namespace EnigmaNet.AspNet.Middlewares.ApiExceptionHandler
+namespace EnigmaNet.AspNet.Middlewares
 {
     public class ApiExceptionHandlerMiddleware
     {

@@ -1,11 +1,11 @@
-﻿using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.Primitives;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Linq;
-using System.Text;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Primitives;
 
-namespace EnigmaNet.AspNet.Middlewares.ApiExceptionHandler
+using EnigmaNet.AspNet.Middlewares;
+
+namespace EnigmaNet.AspNet.Extensions
 {
     public static class ApiExceptionHandlerExtensions
     {
