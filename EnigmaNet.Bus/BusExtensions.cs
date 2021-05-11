@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -8,6 +9,8 @@ namespace EnigmaNet.Bus
 {
     public static class BusExtensions
     {
+        const string EventBusOptionsKey = "EventBusOptions";
+
         public static IServiceCollection AddMemoryCommandBus(this IServiceCollection service)
         {
             service.AddSingleton<Impl.CommandBus>();
@@ -17,8 +20,13 @@ namespace EnigmaNet.Bus
             return service;
         }
 
-        public static IServiceCollection AddMemoryEventBus(this IServiceCollection service)
+        public static IServiceCollection AddMemoryEventBus(this IServiceCollection service, IConfiguration configuration=null)
         {
+            if (configuration != null)
+            {
+                service.Configure<Impl.EventBusOptions>(configuration.GetSection(EventBusOptionsKey));
+            }
+
             service.AddSingleton<Impl.EventBus>();
             service.AddSingleton<IEventPublisher>(provider => provider.GetService<Impl.EventBus>());
             service.AddSingleton<IEventSubscriber>(provider => provider.GetService<Impl.EventBus>());
