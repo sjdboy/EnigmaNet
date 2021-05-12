@@ -3,6 +3,7 @@ using System.Linq;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace EnigmaNet.Bus
@@ -34,11 +35,11 @@ namespace EnigmaNet.Bus
             return service;
         }
 
-        public static IApplicationBuilder SubscriberCommandHandlers(this IApplicationBuilder app)
+        public static IServiceProvider SubscriberCommandHandlers(this IServiceProvider serviceProvider)
         {
-            var logger = app.ApplicationServices.GetService<ILoggerFactory>().CreateLogger(typeof(BusExtensions).FullName);
+            var logger = serviceProvider.GetService<ILoggerFactory>().CreateLogger(typeof(BusExtensions).FullName);
 
-            var commandSubscriber = app.ApplicationServices.GetRequiredService<ICommandSubscriber>();
+            var commandSubscriber = serviceProvider.GetRequiredService<ICommandSubscriber>();
 
             var subscribeMethod = typeof(ICommandSubscriber).GetMethod(nameof(ICommandSubscriber.SubscribeAsync));
 
@@ -62,7 +63,7 @@ namespace EnigmaNet.Bus
                     {
                         logger.LogInformation($"find command handler,type:{type}");
 
-                        var handler = app.ApplicationServices.GetService(type);
+                        var handler = serviceProvider.GetService(type);
                         if (handler == null)
                         {
                             continue;
@@ -83,14 +84,21 @@ namespace EnigmaNet.Bus
                 }
             }
 
+            return serviceProvider;
+        }
+
+        public static IApplicationBuilder SubscriberCommandHandlers(this IApplicationBuilder app)
+        {
+            app.ApplicationServices.SubscriberCommandHandlers();
+
             return app;
         }
 
-        public static IApplicationBuilder SubscriberEventHandlers(this IApplicationBuilder app)
+        public static IServiceProvider SubscriberEventHandlers(this IServiceProvider serviceProvider)
         {
-            var logger = app.ApplicationServices.GetService<ILoggerFactory>().CreateLogger(typeof(BusExtensions).FullName);
+            var logger = serviceProvider.GetService<ILoggerFactory>().CreateLogger(typeof(BusExtensions).FullName);
 
-            var eventSubscriber = app.ApplicationServices.GetRequiredService<IEventSubscriber>();
+            var eventSubscriber = serviceProvider.GetRequiredService<IEventSubscriber>();
 
             var subscribeMethod = typeof(IEventSubscriber).GetMethod(nameof(IEventSubscriber.SubscribeAsync));
 
@@ -102,7 +110,7 @@ namespace EnigmaNet.Bus
                     {
                         logger.LogInformation($"find event handler,type:{type}");
 
-                        var handler = app.ApplicationServices.GetService(type);
+                        var handler = serviceProvider.GetService(type);
                         if (handler == null)
                         {
                             continue;
@@ -126,14 +134,21 @@ namespace EnigmaNet.Bus
                 }
             }
 
+            return serviceProvider;
+        }
+
+        public static IApplicationBuilder SubscriberEventHandlers(this IApplicationBuilder app)
+        {
+            app.ApplicationServices.SubscriberEventHandlers();
+
             return app;
         }
 
-        public static IApplicationBuilder SubscriberDelayMessageHandlers(this IApplicationBuilder app)
+        public static IServiceProvider SubscriberDelayMessageHandlers(this IServiceProvider serviceProvider)
         {
-            var logger = app.ApplicationServices.GetService<ILoggerFactory>().CreateLogger(typeof(BusExtensions).FullName);
+            var logger = serviceProvider.GetService<ILoggerFactory>().CreateLogger(typeof(BusExtensions).FullName);
 
-            var delayMessageSubscriber = app.ApplicationServices.GetRequiredService<IDelayMessageSubscriber>();
+            var delayMessageSubscriber = serviceProvider.GetRequiredService<IDelayMessageSubscriber>();
 
             var subscribeMethod = typeof(IDelayMessageSubscriber).GetMethod(nameof(IDelayMessageSubscriber.SubscribeAsync));
 
@@ -145,7 +160,7 @@ namespace EnigmaNet.Bus
                     {
                         logger.LogInformation($"find delay message handler,type:{type}");
 
-                        var handler = app.ApplicationServices.GetService(type);
+                        var handler = serviceProvider.GetService(type);
                         if (handler == null)
                         {
                             continue;
@@ -166,7 +181,54 @@ namespace EnigmaNet.Bus
                 }
             }
 
+            return serviceProvider;
+        }
+
+        public static IApplicationBuilder SubscriberDelayMessageHandlers(this IApplicationBuilder app)
+        {
+            app.ApplicationServices.SubscriberDelayMessageHandlers();
+
             return app;
         }
+
+        public static IServiceProvider RegisterStopMemoryEventBus(this IServiceProvider serviceProvider)
+        {
+            var lifetime = serviceProvider.GetRequiredService<IHostApplicationLifetime>();
+
+            lifetime.ApplicationStopping.Register(() => {
+                var eventBus = serviceProvider.GetRequiredService<EnigmaNet.Bus.Impl.EventBus>();
+                eventBus.StopQueueHandler();
+            });
+
+            return serviceProvider;
+        }
+
+        public static IApplicationBuilder RegisterStopMemoryEventBus(this IApplicationBuilder app)
+        {
+            app.ApplicationServices.RegisterStopMemoryEventBus();
+
+            return app;
+        }
+
+        public static IServiceProvider RegisterStartMemoryEventBus(this IServiceProvider serviceProvider)
+        {
+            var lifetime = serviceProvider.GetRequiredService<IHostApplicationLifetime>();
+
+            lifetime.ApplicationStarted.Register(() =>
+            {
+                var eventBus = serviceProvider.GetRequiredService<EnigmaNet.Bus.Impl.EventBus>();
+                eventBus.InitEventQueueHandlerIfNot();
+            });
+
+            return serviceProvider;
+        }
+
+        public static IApplicationBuilder RegisterStartMemoryEventBus(this IApplicationBuilder app)
+        {
+            app.RegisterStartMemoryEventBus();
+
+            return app;
+        }
+
     }
 }
