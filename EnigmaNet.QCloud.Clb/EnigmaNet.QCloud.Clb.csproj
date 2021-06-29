@@ -12,7 +12,7 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="5.0.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="5.0.0" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="5.0.0" />
-    <PackageReference Include="TencentCloudSDK" Version="3.0.288" />
+    <PackageReference Include="TencentCloudSDK" Version="3.0.312" />
   </ItemGroup>
 
 </Project>
