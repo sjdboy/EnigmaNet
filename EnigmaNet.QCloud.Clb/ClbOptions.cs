@@ -17,5 +17,6 @@ namespace EnigmaNet.QCloud.Clb
         public string SecretKey { get; set; }
         public string Region { get; set; }
         public List<LocationInfo> Locations { get; set; }
+        public string IpSegment { get; set; }
     }
 }
