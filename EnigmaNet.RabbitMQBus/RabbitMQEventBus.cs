@@ -44,7 +44,7 @@ namespace EnigmaNet.RabbitMQBus
 
         ConnectionFactory CreateMQConnectionFactory()
         {
-            _logger.LogInformation($"CreateMQConnectionFactory,host:{_optionValue.Host}");
+            _logger.LogInformation($"CreateMQConnectionFactory,host:{_optionValue.Host} port:{_optionValue.Port} user:{_optionValue.UserName} virtualHost:{_optionValue.VirtualHost}");
             return new ConnectionFactory()
             {
                 UserName = _optionValue.UserName,
@@ -428,7 +428,7 @@ namespace EnigmaNet.RabbitMQBus
                 thread.IsBackground = true;
                 thread.Start(handler);
 
-                _logger.LogInformation($"Init,StartHandler,handler:{item.GetType()}");
+                _logger.LogInformation($"Init,StartHandler,handler:{handler.GetType()}");
             }
         }
 
