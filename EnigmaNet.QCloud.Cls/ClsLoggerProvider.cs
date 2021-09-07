@@ -31,12 +31,14 @@ namespace EnigmaNet.QCloud.Cls
                 return _logLevels[categoryName];
             }
 
-            var item = _logLevels.FirstOrDefault(m => categoryName.StartsWith(m.Key)).Key;
+            var item = _logLevels
+                .Where(m => categoryName.StartsWith(m.Key))
+                .OrderByDescending(m => m.Key.Length).FirstOrDefault().Key;
+
             if (item != null)
             {
                 return _logLevels[item];
             }
-
 
             return _defaultLogLevel;
         }

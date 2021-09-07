@@ -21,36 +21,12 @@ namespace EnigmaNet.QCloud.Clb
     {
         class TargetInfo
         {
-            public string InstanceId { get; set; }
+            //public string InstanceId { get; set; }
+            public string EniIp { get; set; }
             public int Port { get; set; }
         }
 
         const string QcloudClbOptionsKey = "QcloudClbOptions";
-
-        static string GetIp()
-        {
-            var ip = NetworkInterface.GetAllNetworkInterfaces()
-                .OrderByDescending(m => m.Speed)
-                .Where(m => m.NetworkInterfaceType != NetworkInterfaceType.Loopback &&
-                    m.OperationalStatus == OperationalStatus.Up)
-                .First();
-
-            if (ip != null)
-            {
-                var property = ip.GetIPProperties();
-
-                var ipv4 = property.UnicastAddresses
-                    .Where(m => m.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
-                    .Select(m => m.Address)
-                    .FirstOrDefault();
-
-                return ipv4.ToString();
-            }
-            else
-            {
-                return null;
-            }
-        }
 
         public static IApplicationBuilder RegisterQcloudClb(this IApplicationBuilder app, ClbOptions options = null)
         {
@@ -92,7 +68,7 @@ namespace EnigmaNet.QCloud.Clb
 
                             if (ip == "[::]")
                             {
-                                ip = GetIp();
+                                ip = Utils.IpUtils.GetIp(options.IpSegment);
                             }
                         }
 
@@ -103,37 +79,38 @@ namespace EnigmaNet.QCloud.Clb
 
                         logger.LogInformation($"server info,ip:{ip} port:{port}");
 
-                        string cvmInstanceId;
-                        {
-                            var requestFilsters = new List<TencentCloud.Cvm.V20170312.Models.Filter>();
-                            requestFilsters.Add(new TencentCloud.Cvm.V20170312.Models.Filter
-                            {
-                                Name = "private-ip-address",
-                                Values = new string[] { ip }
-                            });
+                        //string cvmInstanceId;
+                        //{
+                        //    var requestFilsters = new List<TencentCloud.Cvm.V20170312.Models.Filter>();
+                        //    requestFilsters.Add(new TencentCloud.Cvm.V20170312.Models.Filter
+                        //    {
+                        //        Name = "private-ip-address",
+                        //        Values = new string[] { ip }
+                        //    });
 
-                            var cvmClient = new CvmClient(cred, options.Region);
+                        //    var cvmClient = new CvmClient(cred, options.Region);
 
-                            var response = cvmClient.DescribeInstancesSync(
-                                new DescribeInstancesRequest
-                                {
-                                    Filters = requestFilsters.ToArray(),
-                                });
+                        //    var response = cvmClient.DescribeInstancesSync(
+                        //        new DescribeInstancesRequest
+                        //        {
+                        //            Filters = requestFilsters.ToArray(),
+                        //        });
 
-                            cvmInstanceId = response.InstanceSet?
-                              .FirstOrDefault()?.InstanceId;
+                        //    cvmInstanceId = response.InstanceSet?
+                        //      .FirstOrDefault()?.InstanceId;
 
-                            logger.LogInformation($"cvm info:{cvmInstanceId}");
-                        }
+                        //    logger.LogInformation($"cvm info:{cvmInstanceId}");
+                        //}
 
-                        if (string.IsNullOrEmpty(cvmInstanceId))
-                        {
-                            throw new Exception($"cvmInstanceId is null,stop app,ip:{ip} port:{port}");
-                        }
+                        //if (string.IsNullOrEmpty(cvmInstanceId))
+                        //{
+                        //    throw new Exception($"cvmInstanceId is null,stop app,ip:{ip} port:{port}");
+                        //}
 
                         targetInfo = new TargetInfo
                         {
-                            InstanceId = cvmInstanceId,
+                            //InstanceId = cvmInstanceId,
+                            EniIp=ip,
                             Port = port,
                         };
                     }
@@ -155,7 +132,8 @@ namespace EnigmaNet.QCloud.Clb
                                     ListenerId = m.ListenerId,
                                     LocationId = m.LocationId,
                                     Port = targetInfo.Port,
-                                    InstanceId = targetInfo.InstanceId,
+                                    //InstanceId = targetInfo.InstanceId,
+                                    EniIp=targetInfo.EniIp,
                                     Weight = 10,
                                 }).ToArray(),
                             });
@@ -196,7 +174,8 @@ namespace EnigmaNet.QCloud.Clb
                             ListenerId = m.ListenerId,
                             LocationId = m.LocationId,
                             Port = targetInfo.Port,
-                            InstanceId = targetInfo.InstanceId,
+                            //InstanceId = targetInfo.InstanceId,
+                             EniIp=targetInfo.EniIp,
                             Weight = 10,
                         }).ToArray(),
                     });

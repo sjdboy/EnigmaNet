@@ -225,7 +225,7 @@ namespace EnigmaNet.Bus
 
         public static IApplicationBuilder RegisterStartMemoryEventBus(this IApplicationBuilder app)
         {
-            app.RegisterStartMemoryEventBus();
+            app.ApplicationServices.RegisterStartMemoryEventBus();
 
             return app;
         }
