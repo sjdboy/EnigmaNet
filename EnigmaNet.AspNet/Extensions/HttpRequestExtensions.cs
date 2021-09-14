@@ -81,5 +81,10 @@ namespace EnigmaNet.AspNet.Extensions
                 return path;
             }
         }
+
+        public static string GetRequestUrlWithoutProtocol(this HttpRequest source)
+        {
+            return $"//{source.Host}{source.PathBase}{source.Path}{source.QueryString}";
+        }
     }
 }
