@@ -11,6 +11,7 @@ namespace EnigmaNet.DouYinOpenApi.Models.Video
         public string Cover { get; set; }
         public bool IsTop { get; set; }
         public DateTime CreateTime { get; set; }
+        public VideoStatus VideoStatus { get; set; }
         public bool IsReviewed { get; set; }
         public string ShareUrl { get; set; }
         public VideoStatistics Statistics { get; set; }

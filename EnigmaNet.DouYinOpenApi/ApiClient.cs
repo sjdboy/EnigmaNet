@@ -158,6 +158,7 @@ namespace EnigmaNet.DouYinOpenApi
             public string title { get; set; }
             public string cover { get; set; }
             public bool is_top { get; set; }
+            public int video_status { get; set; }
             public int create_time { get; set; }
             public bool is_reviewed { get; set; }
             public string share_url { get; set; }
@@ -672,6 +673,7 @@ namespace EnigmaNet.DouYinOpenApi
                     CreateTime = DateTimeUtils.ToDateTime(m.create_time),
                     IsReviewed = m.is_reviewed,
                     IsTop = m.is_top,
+                    VideoStatus = Enum.Parse<VideoStatus>(m.video_status.ToString()),
                     ShareUrl = m.share_url,
                     Title = m.title,
                     Statistics = new VideoStatistics
@@ -730,6 +732,7 @@ namespace EnigmaNet.DouYinOpenApi
                 ItemId = m.item_id,
                 Cover = m.cover,
                 CreateTime = DateTimeUtils.ToDateTime(m.create_time),
+                VideoStatus = Enum.Parse<VideoStatus>(m.video_status.ToString()),
                 IsReviewed = m.is_reviewed,
                 IsTop = m.is_top,
                 ShareUrl = m.share_url,
