@@ -8,7 +8,6 @@ namespace EnigmaNet.MicroserviceBus.Utils
 {
     class AuthUtils
     {
-        public const string JwtSchemeName = "command_auth_jwt";
         public const string IntrospectionSchemeName = "command_auth_introspection";
     }
 }

@@ -85,40 +85,23 @@ namespace EnigmaNet.MicroserviceBus.Middlewares
 
             ClaimsPrincipal user;
             {
-                var jwtAuthResult = await context.AuthenticateAsync(Utils.AuthUtils.JwtSchemeName);
+                var introspectionAuthResult = await context.AuthenticateAsync(Utils.AuthUtils.IntrospectionSchemeName);
                 if (logger.IsEnabled(LogLevel.Debug))
                 {
-                    logger.LogDebug($"auth jwt result,succeeded:{jwtAuthResult?.Succeeded}");
-                    if (jwtAuthResult.Succeeded == false)
+                    logger.LogDebug($"auth introspection result,succeeded:{introspectionAuthResult?.Succeeded}");
+                    if (introspectionAuthResult.Succeeded == false)
                     {
-                        logger.LogDebug($"auth jwt fail info:{jwtAuthResult?.Failure?.Message}");
+                        logger.LogDebug($"auth introspection fail info:{introspectionAuthResult?.Failure?.Message}");
                     }
                 }
 
-                if (jwtAuthResult.Succeeded)
+                if (introspectionAuthResult.Succeeded)
                 {
-                    user = jwtAuthResult.Principal;
+                    user = introspectionAuthResult.Principal;
                 }
                 else
                 {
-                    var introspectionAuthResult = await context.AuthenticateAsync(Utils.AuthUtils.IntrospectionSchemeName);
-                    if (logger.IsEnabled(LogLevel.Debug))
-                    {
-                        logger.LogDebug($"auth introspection result,succeeded:{introspectionAuthResult?.Succeeded}");
-                        if (introspectionAuthResult.Succeeded == false)
-                        {
-                            logger.LogDebug($"auth introspection fail info:{introspectionAuthResult?.Failure?.Message}");
-                        }
-                    }
-
-                    if (introspectionAuthResult.Succeeded)
-                    {
-                        user = introspectionAuthResult.Principal;
-                    }
-                    else
-                    {
-                        user = null;
-                    }
+                    user = null;
                 }
             }
 

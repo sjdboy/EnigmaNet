@@ -32,18 +32,9 @@ namespace EnigmaNet.MicroserviceBus
             }, x => { x.UseMiddleware<Middlewares.CommandExecuteHandler>(); });
         }
 
-        public static AuthenticationBuilder AddCommandAuthentication(this AuthenticationBuilder builder)
+        public static AuthenticationBuilder AddCommandAuthentication(this AuthenticationBuilder builder, IConfiguration configuration)
         {
-            var configuration = builder.Services.BuildServiceProvider().GetRequiredService<IConfiguration>();
-
             var authenticationOptions = configuration.GetSection(AuthenticationOptionsKey).Get<Options.AuthenticationOptions>();
-
-            builder.AddJwtBearer(Utils.AuthUtils.JwtSchemeName, options =>
-            {
-                options.Authority = authenticationOptions.TokenIssuer;
-                options.RequireHttpsMetadata = false;
-                options.Audience = System.Reflection.Assembly.GetEntryAssembly().GetName().Name;
-            });
 
             builder.AddOAuth2Introspection(Utils.AuthUtils.IntrospectionSchemeName, options =>
             {
@@ -55,6 +46,10 @@ namespace EnigmaNet.MicroserviceBus
                 {
                     RequireHttps = false,
                 };
+                if (authenticationOptions.CacheSeconds > 0)
+                {
+                    options.CacheDuration = TimeSpan.FromSeconds(authenticationOptions.CacheSeconds);
+                }
             });
 
             return builder;

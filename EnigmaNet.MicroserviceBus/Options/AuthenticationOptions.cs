@@ -10,5 +10,6 @@ namespace EnigmaNet.MicroserviceBus.Options
         public string ApiId { get; set; }
         public string ApiSecret { get; set; }
         public string TokenIssuer { get; set; }
+        public int CacheSeconds { get; set; }
     }
 }
