@@ -18,6 +18,7 @@ namespace EnigmaNet.DouYinOpenApi.Impls
             public string access_token { get; set; }
             public int expires_in { get; set; }
             public string refresh_token { get; set; }
+            public int refresh_expires_in { get; set; }
             public string open_id { get; set; }
             public string scope { get; set; }
         }
@@ -27,8 +28,15 @@ namespace EnigmaNet.DouYinOpenApi.Impls
             public string access_token { get; set; }
             public int expires_in { get; set; }
             public string refresh_token { get; set; }
+            public int refresh_expires_in { get; set; }
             public string open_id { get; set; }
             public string scope { get; set; }
+        }
+
+        class RenewRefreshTokenModel : DataBase
+        {
+            public string refresh_token { get; set; }
+            public int expires_in { get; set; }
         }
 
         class ClientTokenModel : DataBase
@@ -37,6 +45,17 @@ namespace EnigmaNet.DouYinOpenApi.Impls
             public int expires_in { get; set; }
         }
 
+        /// <summary>
+        /// 获取授权码
+        /// </summary>
+        /// <param name="clientKey"></param>
+        /// <param name="scopes"></param>
+        /// <param name="state"></param>
+        /// <param name="redirectUrl"></param>
+        /// <returns></returns>
+        /// <remarks>
+        /// 文档：https://open.douyin.com/platform/doc/6848834666171009035
+        /// </remarks>
         public Task<string> GetOAuthConnectAsync(string clientKey, string[] scopes, string state, string redirectUrl)
         {
             var url = Api + "/platform/oauth/connect/"
@@ -61,6 +80,16 @@ namespace EnigmaNet.DouYinOpenApi.Impls
             return Task.FromResult(url);
         }
 
+        /// <summary>
+        /// 获取access_token
+        /// </summary>
+        /// <param name="clientKey"></param>
+        /// <param name="clientSecret"></param>
+        /// <param name="code"></param>
+        /// <returns></returns>
+        /// <remarks>
+        /// 文档：https://open.douyin.com/platform/doc/6848806493387606024
+        /// </remarks>
         public async Task<AccessTokenResult> GetOAuthAccessTokenAsync(string clientKey, string clientSecret, string code)
         {
             var logger = LoggerFactory.CreateLogger<OtherApi>();
@@ -102,11 +131,12 @@ namespace EnigmaNet.DouYinOpenApi.Impls
                 OpenId = data.open_id,
                 ExpiresSeconds = data.expires_in,
                 RefreshToken = data.refresh_token,
+                RefreshExpiresSeconds = data.refresh_expires_in,
                 Scopes = data?.scope.Split(",", StringSplitOptions.RemoveEmptyEntries),
             };
         }
 
-        public async Task<RefreshTokenResult> RefreshOAuthTokenAsync(string clientKey,string refreshToken)
+        public async Task<RefreshTokenResult> RefreshOAuthTokenAsync(string clientKey, string refreshToken)
         {
             var logger = LoggerFactory.CreateLogger<OtherApi>();
 
@@ -146,6 +176,7 @@ namespace EnigmaNet.DouYinOpenApi.Impls
                 ExpiresSeconds = data.expires_in,
                 OpenId = data.open_id,
                 RefreshToken = data.refresh_token,
+                RefreshExpiresSeconds = data.refresh_expires_in,
                 Scopes = data?.scope.Split(",", StringSplitOptions.RemoveEmptyEntries),
             };
         }
@@ -189,5 +220,44 @@ namespace EnigmaNet.DouYinOpenApi.Impls
             };
         }
 
+        public async Task<RenewRefreshTokenResult> RenewRefreshTokenAsync(string clientKey, string refreshToken)
+        {
+            var logger = LoggerFactory.CreateLogger<OtherApi>();
+
+            var url = Api + "/oauth/renew_refresh_token/"
+                .AddQueryParam("client_key", clientKey)
+                .AddQueryParam("refresh_token", refreshToken);
+
+            if (logger.IsEnabled(LogLevel.Trace))
+            {
+                logger.LogTrace($"RenewRefreshTokenAsync,url:{url}");
+            }
+
+            DefaultResultModel<RenewRefreshTokenModel> result;
+            var httpClient = GetClient();
+            {
+                var response = await httpClient.GetAsync(url);
+
+                if (logger.IsEnabled(LogLevel.Trace))
+                {
+                    logger.LogTrace($"RenewRefreshTokenAsync,url:{url} statusCode:{response.StatusCode}");
+
+                    var content = await response.Content.ReadAsStringAsync();
+                    logger.LogTrace($"RenewRefreshTokenAsync,url:{url} content:{content}");
+                }
+
+                result = await response.Content.ReadAsAsync<DefaultResultModel<RenewRefreshTokenModel>>();
+            }
+
+            var data = result.data;
+
+            ThrowExceptionIfError(data);
+
+            return new RenewRefreshTokenResult
+            {
+                RefreshToken = data.refresh_token,
+                RefreshExpiresSeconds = data.expires_in,
+            };
+        }
     }
 }
