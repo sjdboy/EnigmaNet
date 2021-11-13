@@ -1,16 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace EnigmaNet.DouYinOpenApi.Models.OAuth
 {
-    public class AccessTokenResult
+    public class RenewRefreshTokenResult
     {
-        public string AccessToken { get; set; }
-        public int ExpiresSeconds { get; set; }
         public string RefreshToken { get; set; }
         public int RefreshExpiresSeconds { get; set; }
-        public string OpenId { get; set; }
-        public string[] Scopes { get; set; }
     }
 }

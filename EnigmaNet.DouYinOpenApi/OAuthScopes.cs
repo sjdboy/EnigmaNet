@@ -17,5 +17,7 @@ namespace EnigmaNet.DouYinOpenApi
         public const string FollowingList = "following.list";
         public const string FansList = "fans.list";
         public const string FansData = "fans.data";
+        public const string DataExternalUser = "data.external.user";
+        public const string DataExternalItem = "data.external.item";
     }
 }
