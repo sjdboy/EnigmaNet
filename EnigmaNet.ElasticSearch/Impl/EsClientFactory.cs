@@ -77,7 +77,19 @@ namespace EnigmaNet.ElasticSearch.Impl
 
                         var pool = new StaticConnectionPool(_options.Urls.Select(m => new Uri(m)));
 
-                        _settings = new ConnectionSettings(pool);
+                        _settings = new ConnectionSettings(pool, (a, b) =>
+                        {
+                            var setting = new Nest.JsonNetSerializer.JsonNetSerializer(a, b, () =>
+                            {
+                                return new Newtonsoft.Json.JsonSerializerSettings
+                                {
+                                    DateTimeZoneHandling= Newtonsoft.Json.DateTimeZoneHandling.Local,
+                                };
+                            });
+
+                            return setting;
+                        });
+
                         _settings.BasicAuthentication(_options.UserName, _options.Password);
                         _settings.DefaultFieldNameInferrer(n => ToSnakeCase(n));
                         if (!string.IsNullOrEmpty(_options.DefaultIndexName))
