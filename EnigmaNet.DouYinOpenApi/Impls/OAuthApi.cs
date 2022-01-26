@@ -92,7 +92,7 @@ namespace EnigmaNet.DouYinOpenApi.Impls
         /// </remarks>
         public async Task<AccessTokenResult> GetOAuthAccessTokenAsync(string clientKey, string clientSecret, string code)
         {
-            var logger = LoggerFactory.CreateLogger<OtherApi>();
+            var logger = LoggerFactory.CreateLogger<OAuthApi>();
 
             var url = Api + "/oauth/access_token/"
                 .AddQueryParam("client_key", clientKey)
@@ -138,7 +138,7 @@ namespace EnigmaNet.DouYinOpenApi.Impls
 
         public async Task<RefreshTokenResult> RefreshOAuthTokenAsync(string clientKey, string refreshToken)
         {
-            var logger = LoggerFactory.CreateLogger<OtherApi>();
+            var logger = LoggerFactory.CreateLogger<OAuthApi>();
 
             var url = Api + "/oauth/refresh_token/"
                 .AddQueryParam("client_key", clientKey)
@@ -183,7 +183,7 @@ namespace EnigmaNet.DouYinOpenApi.Impls
 
         public async Task<ClientTokenResult> ApplyClientTokenAsync(string clientKey, string clientSecret)
         {
-            var logger = LoggerFactory.CreateLogger<OtherApi>();
+            var logger = LoggerFactory.CreateLogger<OAuthApi>();
 
             var url = Api + "/oauth/client_token/"
                 .AddQueryParam("client_key", clientKey)
@@ -222,7 +222,7 @@ namespace EnigmaNet.DouYinOpenApi.Impls
 
         public async Task<RenewRefreshTokenResult> RenewRefreshTokenAsync(string clientKey, string refreshToken)
         {
-            var logger = LoggerFactory.CreateLogger<OtherApi>();
+            var logger = LoggerFactory.CreateLogger<OAuthApi>();
 
             var url = Api + "/oauth/renew_refresh_token/"
                 .AddQueryParam("client_key", clientKey)
