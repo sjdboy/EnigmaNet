@@ -172,6 +172,13 @@ namespace EnigmaNet.QCloud.Cls
             return content;
         }
 
+        long GetUnixTime(DateTime dt)
+        {
+            var dateTimeOffset = new DateTimeOffset(dt);
+
+            return dateTimeOffset.ToUnixTimeMilliseconds();
+        }
+
         void SendLogs(List<LogInfo> logInfos)
         {
             if (!(logInfos?.Count > 0))
@@ -198,7 +205,7 @@ namespace EnigmaNet.QCloud.Cls
                 foreach (var logInfo in logGroup)
                 {
                     var log = new Log();
-                    log.Time = DateTimeUtils.ToUnixTime2(logInfo.DateTime);
+                    log.Time = GetUnixTime(logInfo.DateTime);
 
                     if (logInfo.EventId.Id != 0)
                     {

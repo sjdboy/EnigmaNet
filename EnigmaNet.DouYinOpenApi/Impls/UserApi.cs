@@ -97,7 +97,7 @@ namespace EnigmaNet.DouYinOpenApi.Impls
 
         public async Task<UserInfo> GetUserInfoAsync(string openId, string accessToken)
         {
-            var logger = LoggerFactory.CreateLogger<OtherApi>();
+            var logger = LoggerFactory.CreateLogger<UserApi>();
 
             var url = Api + "​/oauth/userinfo/"
                .AddQueryParam("access_token", accessToken)
@@ -143,7 +143,7 @@ namespace EnigmaNet.DouYinOpenApi.Impls
 
         public async Task<FollowingListResult> GetFollowingListAsync(string openId, string accessToken, int pageSize, long? cursor)
         {
-            var logger = LoggerFactory.CreateLogger<OtherApi>();
+            var logger = LoggerFactory.CreateLogger<UserApi>();
 
             var url = Api + "​/following/list/"
                .AddQueryParam("access_token", accessToken)
@@ -196,7 +196,7 @@ namespace EnigmaNet.DouYinOpenApi.Impls
 
         public async Task<FansListResult> GetFansListAsync(string openId, string accessToken, int pageSize, long? cursor)
         {
-            var logger = LoggerFactory.CreateLogger<OtherApi>();
+            var logger = LoggerFactory.CreateLogger<UserApi>();
 
             var url = Api + "​/fans/list/"
                .AddQueryParam("access_token", accessToken)
@@ -249,7 +249,7 @@ namespace EnigmaNet.DouYinOpenApi.Impls
 
         public async Task<DataResult> GetFansDataAsync(string openId, string accessToken)
         {
-            var logger = LoggerFactory.CreateLogger<OtherApi>();
+            var logger = LoggerFactory.CreateLogger<UserApi>();
 
             var url = Api + "/fans/data/"
                 .AddQueryParam("access_token", accessToken)

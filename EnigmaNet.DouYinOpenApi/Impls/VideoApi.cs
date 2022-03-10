@@ -90,7 +90,7 @@ namespace EnigmaNet.DouYinOpenApi.Impls
 
         public async Task<VideoListResult> GetVideoListAsync(string openId, string accessToken, int pageSize, long? cursor)
         {
-            var logger = LoggerFactory.CreateLogger<OtherApi>();
+            var logger = LoggerFactory.CreateLogger<VideoApi>();
 
             var url = Api + "/video/list/"
                 .AddQueryParam("access_token", accessToken)
@@ -155,7 +155,7 @@ namespace EnigmaNet.DouYinOpenApi.Impls
 
         public async Task<List<VideoItemInfo>> GetVideoDataAsync(string openId, string accessToken, string[] itemIds)
         {
-            var logger = LoggerFactory.CreateLogger<OtherApi>();
+            var logger = LoggerFactory.CreateLogger<VideoApi>();
 
             var url = Api + "/video/data/"
                .AddQueryParam("access_token", accessToken)
@@ -215,7 +215,7 @@ namespace EnigmaNet.DouYinOpenApi.Impls
 
         public async Task<CommentListResult> GetVideoCommentListAsync(string openId, string accessToken, string itemId, int pageSize, long? cursor)
         {
-            var logger = LoggerFactory.CreateLogger<OtherApi>();
+            var logger = LoggerFactory.CreateLogger<VideoApi>();
 
             var url = Api + "/video/comment/list/"
                .AddQueryParam("access_token", accessToken)
@@ -267,7 +267,7 @@ namespace EnigmaNet.DouYinOpenApi.Impls
 
         public async Task<CommentListResult> GetVideoCommentReplyListAsync(string openId, string accessToken, string itemId, string commentId, int pageSize, long? cursor)
         {
-            var logger = LoggerFactory.CreateLogger<OtherApi>();
+            var logger = LoggerFactory.CreateLogger<VideoApi>();
 
             var url = Api + "/video/comment/reply/list/"
                 .AddQueryParam("access_token", accessToken)
@@ -320,7 +320,7 @@ namespace EnigmaNet.DouYinOpenApi.Impls
 
         public async Task DeleteVideoAsync(string openId, string accessToken, string itemId)
         {
-            var logger = LoggerFactory.CreateLogger<OtherApi>();
+            var logger = LoggerFactory.CreateLogger<VideoApi>();
 
             var url = Api + "/video/delete/"
                .AddQueryParam("access_token", accessToken)
@@ -356,7 +356,7 @@ namespace EnigmaNet.DouYinOpenApi.Impls
 
         public async Task<CreateVideoResult> CreateVideoAsync(string openId, string accessToken, string videoId, string text, string microAppId, string microAppTitle, string microAppUrl, double coverTime, string[] atUserOpenIds, string poiId, string poiName)
         {
-            var logger = LoggerFactory.CreateLogger<OtherApi>();
+            var logger = LoggerFactory.CreateLogger<VideoApi>();
 
             var url = Api + "/video/create/"
                .AddQueryParam("access_token", accessToken)
@@ -408,7 +408,7 @@ namespace EnigmaNet.DouYinOpenApi.Impls
 
         public async Task<UploadVideoResult> UploadVideoAsync(string openId, string accessToken, Stream stream)
         {
-            var logger = LoggerFactory.CreateLogger<OtherApi>();
+            var logger = LoggerFactory.CreateLogger<VideoApi>();
 
             var url = Api + "/video/upload/"
                .AddQueryParam("access_token", accessToken)
@@ -465,7 +465,7 @@ namespace EnigmaNet.DouYinOpenApi.Impls
                 throw new ArgumentNullException(nameof(content));
             }
 
-            var logger = LoggerFactory.CreateLogger<OtherApi>();
+            var logger = LoggerFactory.CreateLogger<VideoApi>();
 
             var url = Api + "/video/comment/reply/"
                .AddQueryParam("access_token", accessToken)
@@ -505,7 +505,7 @@ namespace EnigmaNet.DouYinOpenApi.Impls
 
         public async Task SetVideoCommentTopStatusAsync(string openId, string accessToken, string itemId, string commentId, bool isTop)
         {
-            var logger = LoggerFactory.CreateLogger<OtherApi>();
+            var logger = LoggerFactory.CreateLogger<VideoApi>();
 
             var url = Api + "/video/comment/top/"
                .AddQueryParam("access_token", accessToken)
@@ -546,7 +546,7 @@ namespace EnigmaNet.DouYinOpenApi.Impls
 
         public async Task<CommentListResult> GetGeneralUserVideoCommentListAsync(string openId, string accessToken, string itemId, int pageSize, long? cursor)
         {
-            var logger = LoggerFactory.CreateLogger<OtherApi>();
+            var logger = LoggerFactory.CreateLogger<VideoApi>();
 
             var url = Api + "/item/comment/list/"
                .AddQueryParam("access_token", accessToken)
@@ -598,7 +598,7 @@ namespace EnigmaNet.DouYinOpenApi.Impls
 
         public async Task<CommentListResult> GetGeneralUserVideoCommentReplyListAsync(string openId, string accessToken, string itemId, string commentId, int pageSize, long? cursor)
         {
-            var logger = LoggerFactory.CreateLogger<OtherApi>();
+            var logger = LoggerFactory.CreateLogger<VideoApi>();
 
             var url = Api + "/item/comment/reply/list/"
                 .AddQueryParam("access_token", accessToken)
@@ -656,7 +656,7 @@ namespace EnigmaNet.DouYinOpenApi.Impls
                 throw new ArgumentNullException(nameof(content));
             }
 
-            var logger = LoggerFactory.CreateLogger<OtherApi>();
+            var logger = LoggerFactory.CreateLogger<VideoApi>();
 
             var url = Api + "/item/comment/reply/"
                .AddQueryParam("access_token", accessToken)
