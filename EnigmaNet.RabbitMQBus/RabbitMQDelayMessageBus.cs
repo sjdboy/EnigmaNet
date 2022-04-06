@@ -351,7 +351,8 @@ namespace EnigmaNet.RabbitMQBus
         public RabbitMQDelayMessageBus(ILogger<RabbitMQDelayMessageBus> logger,
             IOptions<RabbitMQDelayMessageBusOptions> options)
         {
-
+            _logger = logger;
+            _optionValue = options.Value;
         }
 
         public Task PublishAsync<T>(T message) where T : DelayMessage
