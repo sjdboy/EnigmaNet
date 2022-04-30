@@ -17,7 +17,10 @@ namespace EnigmaNet.Utils
         {
             if (!string.IsNullOrEmpty(text))
             {
-                return text.Replace("\r\n", "<br/>").Replace(" ", "&nbsp;");
+                return text
+                    .Replace("\n", "<br/>")
+                    .Replace("\r",string.Empty)
+                    .Replace(" ", "&nbsp;");
             }
             return text;
         }
