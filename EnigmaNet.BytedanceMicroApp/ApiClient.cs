@@ -23,6 +23,7 @@ namespace EnigmaNet.BytedanceMicroApp
             public string session_key { get; set; }
             public string openid { get; set; }
             public string anonymous_openid { get; set; }
+            public string unionid { get; set; }
         }
 
         const string Api = "https://developer.toutiao.com";
@@ -75,6 +76,7 @@ namespace EnigmaNet.BytedanceMicroApp
                 SessionKey = result.session_key,
                 OpenId = result.openid,
                 AnonymousOpenId = result.anonymous_openid,
+                UnionId = result.unionid,
             };
         }
     }
