@@ -244,5 +244,9 @@ namespace EnigmaNet.Utils
             }
         }
 
+        public static string GetCamelCaseString(string name)
+        {
+            return char.ToLowerInvariant(name[0]) + name.Substring(1);
+        }
     }
 }

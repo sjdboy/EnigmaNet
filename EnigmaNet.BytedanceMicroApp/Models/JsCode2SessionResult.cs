@@ -9,5 +9,6 @@ namespace EnigmaNet.BytedanceMicroApp.Models
         public string SessionKey { get; set; }
         public string OpenId { get; set; }
         public string AnonymousOpenId { get; set; }
+        public string UnionId { get; set; }
     }
 }

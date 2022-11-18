@@ -58,7 +58,7 @@ namespace EnigmaNet.Utils
             /// <summary>
             /// 身份证号
             /// </summary>
-            public const string PARRERN_ID_CARD = @"^(^\d{15}$|^\d{18}$|^\d{17}(\d|X|x))$";
+            public const string PARRERN_ID_CARD = @"^[1-9]\d{5}\d{2}((0[1-9])|(10|11|12))(([0-2][1-9])|10|20|30|31)\d{3}$";
 
             /// <summary>
             /// 银行卡号
