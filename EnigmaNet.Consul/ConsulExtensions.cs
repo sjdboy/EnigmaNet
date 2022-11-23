@@ -136,7 +136,7 @@ namespace EnigmaNet.Consul
             return app;
         }
 
-        public static IHostBuilder ConfigureConsulKeyValue(this IHostBuilder source)
+        public static IHostBuilder ConfigureConsulKeyValue(this IHostBuilder source,string commonFolder= "Common")
         {
             return source.ConfigureAppConfiguration((host, config) =>
             {
@@ -145,7 +145,7 @@ namespace EnigmaNet.Consul
                 config
                 .AddJsonFile("local-appsettings.json", false)
                 .AddEnvironmentVariables()
-                .AddConsul($"Common/service-appsettings.json", x =>
+                .AddConsul($"{commonFolder}/service-appsettings.json", x =>
                 {
                     var configuration = config.Build();
                     var consulOptions = new ConsulOptions();
