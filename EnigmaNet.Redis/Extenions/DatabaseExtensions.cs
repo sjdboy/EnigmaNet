@@ -14,13 +14,21 @@ namespace EnigmaNet.Redis.Extenions
 
         public static async Task<T> ModelGetAsync<T>(this IDatabase database, string key, CommandFlags flags = CommandFlags.None)
         {
-            var content = await database.StringGetAsync(key, flags);
-            if (content.IsNullOrEmpty || string.IsNullOrEmpty(content))
+            var redisValue = await database.StringGetAsync(key, flags);
+            if (redisValue.IsNullOrEmpty)
             {
-                return default(T);
+                return default;
             }
 
-            return Newtonsoft.Json.JsonConvert.DeserializeObject<T>(content);
+            var tType = typeof(T);
+            if (tType.IsValueType || tType == typeof(string) || tType == typeof(Nullable<>))
+            {
+                return (T)Convert.ChangeType(redisValue, tType);
+            }
+            else
+            {
+                return Newtonsoft.Json.JsonConvert.DeserializeObject<T>(redisValue);
+            }
         }
 
         public static async Task<IDictionary<string, T>> ModelGetAsync<T>(this IDatabase database, ISet<string> keys, CommandFlags flags = CommandFlags.None)
@@ -32,23 +40,32 @@ namespace EnigmaNet.Redis.Extenions
 
             var keyList = keys.Select(m => (RedisKey)m).ToArray();
 
-            var contents = await database.StringGetAsync(keyList, flags);
+            var redisValues = await database.StringGetAsync(keyList, flags);
 
             var list = new Dictionary<string, T>();
+
+            var tType = typeof(T);
 
             for (var i = 0; i < keyList.Length; i++)
             {
                 var key = keyList[i];
-                var content = contents[i];
-
+                var redisValue = redisValues[i];
+                
                 T t;
-                if (content.IsNullOrEmpty || string.IsNullOrEmpty(content))
+                if (redisValue.IsNullOrEmpty)
                 {
-                    t = default(T);
+                    t = default;
                 }
                 else
                 {
-                    t = Newtonsoft.Json.JsonConvert.DeserializeObject<T>(content);
+                    if (tType.IsValueType || tType == typeof(string) || tType == typeof(Nullable<>))
+                    {
+                        t = (T)Convert.ChangeType(redisValue, tType);
+                    }
+                    else
+                    {
+                        t = Newtonsoft.Json.JsonConvert.DeserializeObject<T>(redisValue);
+                    }
                 }
 
                 list.Add(key, t);
@@ -59,10 +76,19 @@ namespace EnigmaNet.Redis.Extenions
 
         public static async Task ModelSetAsync<T>(this IDatabase database, string key, T model, TimeSpan? expiry = null, When when = When.Always, CommandFlags flags = CommandFlags.None)
         {
+            var tType = typeof(T);
+
             RedisValue content;
             if (model != null)
             {
-                content = Newtonsoft.Json.JsonConvert.SerializeObject(model);
+                if (tType.IsValueType || tType == typeof(string))
+                {
+                    content = model.ToString();
+                }
+                else
+                {
+                    content = Newtonsoft.Json.JsonConvert.SerializeObject(model);
+                }
             }
             else
             {
@@ -78,6 +104,8 @@ namespace EnigmaNet.Redis.Extenions
             {
                 throw new ArgumentNullException(nameof(data));
             }
+
+            var tType = typeof(T);
 
             int perBatchSize;
             if (batchSize == null || batchSize <= 0)
@@ -95,7 +123,14 @@ namespace EnigmaNet.Redis.Extenions
                 RedisValue content;
                 if (item.Value != null)
                 {
-                    content = Newtonsoft.Json.JsonConvert.SerializeObject(item.Value);
+                    if (tType.IsValueType || tType == typeof(string))
+                    {
+                        content = item.Value.ToString();
+                    }
+                    else
+                    {
+                        content = Newtonsoft.Json.JsonConvert.SerializeObject(item.Value);
+                    }
                 }
                 else
                 {
