@@ -136,11 +136,14 @@ namespace EnigmaNet.Consul
             return app;
         }
 
-        public static IHostBuilder ConfigureConsulKeyValue(this IHostBuilder source,string commonFolder= "Common")
+        public static IHostBuilder ConfigureConsulKeyValue(this IHostBuilder source, string commonFolder = "Common", string appFolder = null)
         {
             return source.ConfigureAppConfiguration((host, config) =>
             {
-                var appName = host.HostingEnvironment.ApplicationName;
+                if (string.IsNullOrEmpty(appFolder))
+                {
+                    appFolder = host.HostingEnvironment.ApplicationName;
+                }
 
                 config
                 .AddJsonFile("local-appsettings.json", false)
@@ -167,7 +170,7 @@ namespace EnigmaNet.Consul
                     x.ReloadOnChange = true;
                     x.PollWaitTime = TimeSpan.FromSeconds(5);
                 })
-                .AddConsul($"{appName}/remote-appsettings.json", x =>
+                .AddConsul($"{appFolder}/remote-appsettings.json", x =>
                 {
                     var configuration = config.Build();
                     var consulOptions = new ConsulOptions();
