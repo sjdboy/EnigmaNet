@@ -54,7 +54,7 @@ namespace EnigmaNet.BigCache.Cos
             GetObjectBytesResult result;
             try
             {
-                result = cosXml.GetObject(new COSXML.Model.Object.GetObjectBytesRequest($"{bucket}-{appId}", key));
+                result = await cosXml.ExecuteAsync<GetObjectBytesResult>(new GetObjectBytesRequest($"{bucket}-{appId}", key));
             }
             catch (CosServerException ex)
             {
@@ -82,9 +82,16 @@ namespace EnigmaNet.BigCache.Cos
                 return default;
             }
 
-            var model = JsonConvert.DeserializeObject<T>(content);
+            if (typeof(T) == typeof(string))
+            {
+                return (T)(object)content;
+            }
+            else
+            {
+                var model = JsonConvert.DeserializeObject<T>(content);
 
-            return model;
+                return model;
+            }
         }
 
         public async Task RemoveAsync(string key)
@@ -99,7 +106,7 @@ namespace EnigmaNet.BigCache.Cos
             var appId = CosOptionsValue.AppId;
             var bucket = CosOptionsValue.Bucket;
 
-            cosXml.DeleteObject(new COSXML.Model.Object.DeleteObjectRequest($"{bucket}-{appId}", key));
+            await cosXml.ExecuteAsync<DeleteObjectResult>(new DeleteObjectRequest($"{bucket}-{appId}", key));
         }
 
         public async Task SetAsync<T>(string key, T obj)
@@ -116,7 +123,14 @@ namespace EnigmaNet.BigCache.Cos
             }
             else
             {
-                content = JsonConvert.SerializeObject(obj);
+                if (typeof(T) == typeof(string))
+                {
+                    content = obj.ToString();
+                }
+                else
+                {
+                    content = JsonConvert.SerializeObject(obj);
+                }
             }
 
             var bytes = System.Text.Encoding.UTF8.GetBytes(content);
@@ -124,11 +138,11 @@ namespace EnigmaNet.BigCache.Cos
             var appId = CosOptionsValue.AppId;
             var bucket = CosOptionsValue.Bucket;
 
-            var request = new COSXML.Model.Object.PutObjectRequest($"{bucket}-{appId}", key, bytes);
+            var request = new PutObjectRequest($"{bucket}-{appId}", key, bytes);
 
             var cosXml = CreateCosServer();
 
-            cosXml.PutObject(request);
+            await cosXml.ExecuteAsync<PutObjectResult>(request);
         }
     }
 }
