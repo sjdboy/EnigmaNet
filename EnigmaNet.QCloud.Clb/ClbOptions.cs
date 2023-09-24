@@ -18,5 +18,6 @@ namespace EnigmaNet.QCloud.Clb
         public string Region { get; set; }
         public List<LocationInfo> Locations { get; set; }
         public string IpSegment { get; set; }
+        public int MaxTryCount { get; set; } = 10;
     }
 }

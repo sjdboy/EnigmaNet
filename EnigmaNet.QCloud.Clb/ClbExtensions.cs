@@ -1,7 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Net.NetworkInformation;
+using System.Threading;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.Extensions.Hosting;
@@ -10,8 +9,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 using TencentCloud.Common;
-using TencentCloud.Cvm.V20170312;
-using TencentCloud.Cvm.V20170312.Models;
 using TencentCloud.Clb.V20180317;
 using TencentCloud.Clb.V20180317.Models;
 
@@ -21,7 +18,6 @@ namespace EnigmaNet.QCloud.Clb
     {
         class TargetInfo
         {
-            //public string InstanceId { get; set; }
             public string EniIp { get; set; }
             public int Port { get; set; }
         }
@@ -79,38 +75,9 @@ namespace EnigmaNet.QCloud.Clb
 
                         logger.LogInformation($"server info,ip:{ip} port:{port}");
 
-                        //string cvmInstanceId;
-                        //{
-                        //    var requestFilsters = new List<TencentCloud.Cvm.V20170312.Models.Filter>();
-                        //    requestFilsters.Add(new TencentCloud.Cvm.V20170312.Models.Filter
-                        //    {
-                        //        Name = "private-ip-address",
-                        //        Values = new string[] { ip }
-                        //    });
-
-                        //    var cvmClient = new CvmClient(cred, options.Region);
-
-                        //    var response = cvmClient.DescribeInstancesSync(
-                        //        new DescribeInstancesRequest
-                        //        {
-                        //            Filters = requestFilsters.ToArray(),
-                        //        });
-
-                        //    cvmInstanceId = response.InstanceSet?
-                        //      .FirstOrDefault()?.InstanceId;
-
-                        //    logger.LogInformation($"cvm info:{cvmInstanceId}");
-                        //}
-
-                        //if (string.IsNullOrEmpty(cvmInstanceId))
-                        //{
-                        //    throw new Exception($"cvmInstanceId is null,stop app,ip:{ip} port:{port}");
-                        //}
-
                         targetInfo = new TargetInfo
                         {
-                            //InstanceId = cvmInstanceId,
-                            EniIp=ip,
+                            EniIp = ip,
                             Port = port,
                         };
                     }
@@ -122,29 +89,51 @@ namespace EnigmaNet.QCloud.Clb
                         {
                             var loadBalancerId = group.Key;
 
-                            logger.LogInformation($"RegisterTargets,{Newtonsoft.Json.JsonConvert.SerializeObject(group)}");
-
-                            client.BatchRegisterTargetsSync(new BatchRegisterTargetsRequest
+                            var tryIndex = 0;
+                            while (true)
                             {
-                                LoadBalancerId = loadBalancerId,
-                                Targets = group.Select(m => new BatchTarget
-                                {
-                                    ListenerId = m.ListenerId,
-                                    LocationId = m.LocationId,
-                                    Port = targetInfo.Port,
-                                    //InstanceId = targetInfo.InstanceId,
-                                    EniIp=targetInfo.EniIp,
-                                    Weight = 10,
-                                }).ToArray(),
-                            });
+                                tryIndex++;
 
-                            logger.LogInformation($"RegisterTargets finish,{Newtonsoft.Json.JsonConvert.SerializeObject(group)}");
+                                logger.LogInformation($"RegisterTargets,tryIndex:{tryIndex},{Newtonsoft.Json.JsonConvert.SerializeObject(group)}");
+
+                                try
+                                {
+                                    client.BatchRegisterTargetsSync(new BatchRegisterTargetsRequest
+                                    {
+                                        LoadBalancerId = loadBalancerId,
+                                        Targets = group.Select(m => new BatchTarget
+                                        {
+                                            ListenerId = m.ListenerId,
+                                            LocationId = m.LocationId,
+                                            Port = targetInfo.Port,
+                                            EniIp = targetInfo.EniIp,
+                                            Weight = 10,
+                                        }).ToArray(),
+                                    });
+
+                                    logger.LogInformation($"RegisterTargets finish,tryIndex:{tryIndex},{Newtonsoft.Json.JsonConvert.SerializeObject(group)}");
+                                    break;
+                                }
+                                catch (Exception ex)
+                                {
+                                    logger.LogError(ex, $"RegisterTargets error,tryIndex:{tryIndex}, maxTryCount:{options.MaxTryCount}, {Newtonsoft.Json.JsonConvert.SerializeObject(group)}");
+
+                                    if (tryIndex >= options.MaxTryCount)
+                                    {
+                                        throw;
+                                    }
+                                    else
+                                    {
+                                        Thread.Sleep(500);
+                                    }
+                                }
+                            }
                         }
                     }
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
-                    logger.LogCritical(ex,$"reg error and stop app");
+                    logger.LogCritical(ex, $"reg error and stop app");
 
                     //注册出错=>退出应用
                     lifetime.StopApplication();
@@ -164,23 +153,46 @@ namespace EnigmaNet.QCloud.Clb
                 {
                     var loadBalancerId = group.Key;
 
-                    logger.LogInformation($"BatchDeregisterTargets,{Newtonsoft.Json.JsonConvert.SerializeObject(group)}");
-
-                    client.BatchDeregisterTargetsSync(new BatchDeregisterTargetsRequest
+                    var tryIndex = 0;
+                    while (true)
                     {
-                        LoadBalancerId = loadBalancerId,
-                        Targets = group.Select(m => new BatchTarget
-                        {
-                            ListenerId = m.ListenerId,
-                            LocationId = m.LocationId,
-                            Port = targetInfo.Port,
-                            //InstanceId = targetInfo.InstanceId,
-                             EniIp=targetInfo.EniIp,
-                            Weight = 10,
-                        }).ToArray(),
-                    });
+                        tryIndex++;
 
-                    logger.LogInformation($"BatchDeregisterTargets finish,{Newtonsoft.Json.JsonConvert.SerializeObject(group)}");
+                        try
+                        {
+                            logger.LogInformation($"BatchDeregisterTargets,tryIndex:{tryIndex},{Newtonsoft.Json.JsonConvert.SerializeObject(group)}");
+
+                            client.BatchDeregisterTargetsSync(new BatchDeregisterTargetsRequest
+                            {
+                                LoadBalancerId = loadBalancerId,
+                                Targets = group.Select(m => new BatchTarget
+                                {
+                                    ListenerId = m.ListenerId,
+                                    LocationId = m.LocationId,
+                                    Port = targetInfo.Port,
+                                    EniIp = targetInfo.EniIp,
+                                    Weight = 10,
+                                }).ToArray(),
+                            });
+
+                            logger.LogInformation($"BatchDeregisterTargets finish,tryIndex:{tryIndex},{Newtonsoft.Json.JsonConvert.SerializeObject(group)}");
+
+                            break;
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.LogError(ex, $"BatchDeregisterTargets error,tryIndex:{tryIndex}, maxTryCount:{options.MaxTryCount}, {Newtonsoft.Json.JsonConvert.SerializeObject(group)}");
+
+                            if (tryIndex >= options.MaxTryCount)
+                            {
+                                throw;
+                            }
+                            else
+                            {
+                                Thread.Sleep(500);
+                            }
+                        }
+                    }
                 }
             });
 
