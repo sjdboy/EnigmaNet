@@ -14,6 +14,7 @@ using IdentityModel.Client;
 using EnigmaNet.Bus;
 using EnigmaNet.Bus.Impl;
 using EnigmaNet.Exceptions;
+using EnigmaNet.Extensions;
 
 namespace EnigmaNet.MicroserviceBus
 {
@@ -103,19 +104,24 @@ namespace EnigmaNet.MicroserviceBus
                 {
                     _logger.LogTrace("CheckToken, options is empty, wait a moment and continue");
 
-                    Thread.CurrentThread.Join(1000 * 10);
+                    Thread.Sleep(1000 * 5);
                     continue;
                 }
 
-                if (_expiredDateTime.HasValue &&
-                    (_expiredDateTime.Value - DateTime.Now).TotalSeconds > _optionsValue.RefreshTokenRemainingSeconds)
+                if (_expiredDateTime.HasValue)
                 {
-                    _logger.LogTrace($"CheckToken, timeGap more than {_optionsValue.RefreshTokenRemainingSeconds}, wait a moment and continue");
+                    var seconds = (_expiredDateTime.Value - DateTime.Now).TotalSeconds;
 
-                    Thread.CurrentThread.Join(1000 * 1);
-                    continue;
+                    if (seconds > _optionsValue.RefreshTokenRemainingSeconds)
+                    {
+                        var waitSeconds = Convert.ToInt32(Math.Ceiling(seconds - 5)).IfLessOrEqualBecome(5, 5);
+
+                        _logger.LogTrace($"CheckToken, timeGap more than {_optionsValue.RefreshTokenRemainingSeconds}s, wait a moment({waitSeconds}s) and continue");
+
+                        Thread.Sleep(1000 * waitSeconds);
+                        continue;
+                    }
                 }
-
 
                 _logger.LogTrace("CheckToken, no token or timeGap less than 60, start apply token");
 
@@ -128,7 +134,7 @@ namespace EnigmaNet.MicroserviceBus
 
                     _logger.LogTrace($"CheckToken, apply token success, save token, accessToken:{token.AccessToken} expiresIn:{token.ExpiresIn}");
 
-                    Thread.CurrentThread.Join(1000 * 10);
+                    Thread.Sleep(1000 * 10);
 
                     //var waitSecond = (token.ExpiresIn - 20).IfLessThanBecome(10, 10);
                     //_logger.LogTrace($"CheckToken, wait:{waitSecond}s");
@@ -137,7 +143,7 @@ namespace EnigmaNet.MicroserviceBus
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "CheckToken, apply token error, wait a moment and continue");
-                    Thread.CurrentThread.Join(1000 * 5);
+                    Thread.Sleep(1000 * 5);
                 }
             }
         }
