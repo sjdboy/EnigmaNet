@@ -150,5 +150,34 @@ namespace EnigmaNet.Utils
             }
         }
 
+        public static string AesEncrypt(string text, string key, string iv)
+        {
+            var bytes = Encoding.UTF8.GetBytes(text);
+
+            var aes = Aes.Create();
+            aes.Key = Encoding.UTF8.GetBytes(key);
+            aes.IV = Encoding.UTF8.GetBytes(iv);
+
+            var transform = aes.CreateEncryptor();
+
+            var cipherBytes = transform.TransformFinalBlock(bytes, 0, bytes.Length);
+
+            return Convert.ToBase64String(cipherBytes);
+        }
+
+        public static string AesDecrypt(string text, string key, string iv)
+        {
+            var bytes = Convert.FromBase64String(text);
+
+            var aes = Aes.Create();
+            aes.Key = Encoding.UTF8.GetBytes(key);
+            aes.IV = Encoding.UTF8.GetBytes(iv);
+
+            var transform = aes.CreateDecryptor();
+
+            var plainBytes = transform.TransformFinalBlock(bytes, 0, bytes.Length);
+
+            return Encoding.UTF8.GetString(plainBytes);
+        }
     }
 }
