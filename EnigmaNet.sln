@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.29609.76
+# Visual Studio Version 17
+VisualStudioVersion = 17.10.34928.147
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EnigmaNet", "EnigmaNet\EnigmaNet.csproj", "{48D7A176-ED86-4951-88B1-4B8C6BC12142}"
 EndProject
@@ -30,6 +30,10 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EnigmaNet.QCloud.Cls", "EnigmaNet.QCloud.Cls\EnigmaNet.QCloud.Cls.csproj", "{E7C01341-2E39-41D0-BA5C-7EFC75AF9157}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EnigmaNet.ElasticSearch", "EnigmaNet.ElasticSearch\EnigmaNet.ElasticSearch.csproj", "{18C9E4CC-66B2-4E97-A699-8130A908BA13}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EnigmaNet.Bus.Extensions", "EnigmaNet.Bus.Extensions\EnigmaNet.Bus.Extensions.csproj", "{31B90EDE-203A-4721-85C6-4645D56FE8B0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EnigmaNet.RabbitMQBus.Extensions", "EnigmaNet.RabbitMQBus.Extensions\EnigmaNet.RabbitMQBus.Extensions.csproj", "{B54BC44D-42B7-40A0-992F-D736DA619287}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -93,6 +97,14 @@ Global
 		{18C9E4CC-66B2-4E97-A699-8130A908BA13}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{18C9E4CC-66B2-4E97-A699-8130A908BA13}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{18C9E4CC-66B2-4E97-A699-8130A908BA13}.Release|Any CPU.Build.0 = Release|Any CPU
+		{31B90EDE-203A-4721-85C6-4645D56FE8B0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{31B90EDE-203A-4721-85C6-4645D56FE8B0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{31B90EDE-203A-4721-85C6-4645D56FE8B0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{31B90EDE-203A-4721-85C6-4645D56FE8B0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B54BC44D-42B7-40A0-992F-D736DA619287}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B54BC44D-42B7-40A0-992F-D736DA619287}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B54BC44D-42B7-40A0-992F-D736DA619287}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B54BC44D-42B7-40A0-992F-D736DA619287}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
