@@ -68,11 +68,15 @@ namespace EnigmaNet.Utils
         /// <returns></returns>
         public static string DesEncrypt(string text, string key, Encoding encoding)
         {
-            var algorithm = new DESCryptoServiceProvider()
-            {
-                Key = GetKey(key),
-                IV = GetIV(key)
-            };
+            // var algorithm = new DESCryptoServiceProvider()
+            // {
+            //     Key = GetKey(key),
+            //     IV = GetIV(key)
+            // };
+
+            using var algorithm = Aes.Create();
+            algorithm.Key = GetKey(key);
+            algorithm.IV = GetIV(key);
 
             var textBytes = encoding.GetBytes(text);
 
@@ -102,11 +106,15 @@ namespace EnigmaNet.Utils
         /// <returns></returns>
         public static string DesDecrypt(string text, string key, Encoding encoding)
         {
-            var algorithm = new DESCryptoServiceProvider()
-            {
-                Key = GetKey(key),
-                IV = GetIV(key)
-            };
+            // var algorithm = new DESCryptoServiceProvider()
+            // {
+            //     Key = GetKey(key),
+            //     IV = GetIV(key)
+            // };
+
+            using var algorithm = Aes.Create();
+            algorithm.Key = GetKey(key);
+            algorithm.IV = GetIV(key);
 
             var textBytes = FromHexString(text);
 
@@ -128,26 +136,32 @@ namespace EnigmaNet.Utils
 
         public static string Sha256(string text)
         {
-            using (SHA256 sha = new SHA256Managed())
-            {
-                var result = sha.ComputeHash(Encoding.UTF8.GetBytes(text));
+            // using (SHA256 sha = new SHA256Managed())
+            // {
 
-                var resultString = BitConverter.ToString(result);
+            using var sha = SHA256.Create();
 
-                return resultString.Replace("-", string.Empty);
-            }
+            var result = sha.ComputeHash(Encoding.UTF8.GetBytes(text));
+
+            var resultString = BitConverter.ToString(result);
+
+            return resultString.Replace("-", string.Empty);
+            // }
         }
 
         public static string Sha1(string text)
         {
-            using(SHA1 sha=new SHA1Managed())
-            {
-                var result = sha.ComputeHash(Encoding.UTF8.GetBytes(text));
+            // using (SHA1 sha = new SHA1Managed())
+            // {
 
-                var resultString = BitConverter.ToString(result);
+            using var sha = SHA1.Create();
 
-                return resultString.Replace("-", string.Empty);
-            }
+            var result = sha.ComputeHash(Encoding.UTF8.GetBytes(text));
+
+            var resultString = BitConverter.ToString(result);
+
+            return resultString.Replace("-", string.Empty);
+            // }
         }
 
         public static string AesEncrypt(string text, string key, string iv)

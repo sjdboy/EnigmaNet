@@ -6,7 +6,7 @@ namespace EnigmaNet.Utils
 {
     public static class DateTimeUtils
     {
-        static readonly DateTime START_UT_DT = TimeZone.CurrentTimeZone.ToLocalTime(new DateTime(1970, 1, 1, 0, 0, 0));
+        static readonly DateTime START_UT_DT = TimeZoneInfo.ConvertTimeFromUtc(new DateTime(1970, 1, 1, 0, 0, 0), TimeZoneInfo.Local);
 
         /// <summary>
         /// Net时间转换为UnixTime时间戳
