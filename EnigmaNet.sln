@@ -35,6 +35,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EnigmaNet.Bus.Extensions", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EnigmaNet.RabbitMQBus.Extensions", "EnigmaNet.RabbitMQBus.Extensions\EnigmaNet.RabbitMQBus.Extensions.csproj", "{B54BC44D-42B7-40A0-992F-D736DA619287}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EnigmaNet.BigCache", "EnigmaNet.BigCache\EnigmaNet.BigCache.csproj", "{C5EFA56D-36FF-48CA-A35C-3FC28300DE62}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EnigmaNet.BigCache.Cos", "EnigmaNet.BigCache.Cos\EnigmaNet.BigCache.Cos.csproj", "{585A2210-A00B-4E0C-94C7-7F6902C33A66}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EnigmaNet.FeiShuOpenApi", "EnigmaNet.FeiShuOpenApi\EnigmaNet.FeiShuOpenApi.csproj", "{D1F4D326-F151-46A0-B412-A97EDCB7FF11}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -105,6 +111,18 @@ Global
 		{B54BC44D-42B7-40A0-992F-D736DA619287}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B54BC44D-42B7-40A0-992F-D736DA619287}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B54BC44D-42B7-40A0-992F-D736DA619287}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C5EFA56D-36FF-48CA-A35C-3FC28300DE62}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C5EFA56D-36FF-48CA-A35C-3FC28300DE62}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C5EFA56D-36FF-48CA-A35C-3FC28300DE62}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C5EFA56D-36FF-48CA-A35C-3FC28300DE62}.Release|Any CPU.Build.0 = Release|Any CPU
+		{585A2210-A00B-4E0C-94C7-7F6902C33A66}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{585A2210-A00B-4E0C-94C7-7F6902C33A66}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{585A2210-A00B-4E0C-94C7-7F6902C33A66}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{585A2210-A00B-4E0C-94C7-7F6902C33A66}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D1F4D326-F151-46A0-B412-A97EDCB7FF11}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D1F4D326-F151-46A0-B412-A97EDCB7FF11}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D1F4D326-F151-46A0-B412-A97EDCB7FF11}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D1F4D326-F151-46A0-B412-A97EDCB7FF11}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
