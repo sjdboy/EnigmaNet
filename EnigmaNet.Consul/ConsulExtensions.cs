@@ -195,5 +195,61 @@ namespace EnigmaNet.Consul
             });
         }
 
+        public static IHostApplicationBuilder ConfigureConsulKeyValue(this IHostApplicationBuilder source, string commonFolder = "Common", string appFolder = null)
+        {
+            if (string.IsNullOrEmpty(appFolder))
+            {
+                appFolder=source.Environment.ApplicationName;
+            }
+
+            source.Configuration.AddJsonFile("local-appsettings.json", false)
+                .AddEnvironmentVariables()
+                .AddConsul($"{commonFolder}/service-appsettings.json", x =>
+                {
+                    var configuration = source.Configuration.Build();
+                    var consulOptions = new ConsulOptions();
+                    configuration.Bind(ConsulOptionsKey, consulOptions);
+
+                    Console.WriteLine("consulOptions.Url:" + consulOptions.Url);
+
+                    if (string.IsNullOrEmpty(consulOptions.Url))
+                    {
+                        throw new ArgumentNullException(nameof(consulOptions.Url));
+                    }
+
+                    x.ConsulConfigurationOptions = o =>
+                    {
+                        o.Address = new Uri(consulOptions.Url);
+                        o.Token = consulOptions.Token;
+                    };
+                    x.Optional = false;
+                    x.ReloadOnChange = true;
+                    x.PollWaitTime = TimeSpan.FromSeconds(5);
+                })
+                .AddConsul($"{appFolder}/remote-appsettings.json", x =>
+                {
+                    var configuration = source.Configuration.Build();
+                    var consulOptions = new ConsulOptions();
+                    configuration.Bind(ConsulOptionsKey, consulOptions);
+
+                    Console.WriteLine("consulOptions.Url:" + consulOptions.Url);
+
+                    if (string.IsNullOrEmpty(consulOptions.Url))
+                    {
+                        throw new ArgumentNullException(nameof(consulOptions.Url));
+                    }
+
+                    x.ConsulConfigurationOptions = o =>
+                    {
+                        o.Address = new Uri(consulOptions.Url);
+                        o.Token = consulOptions.Token;
+                    };
+                    x.Optional = false;
+                    x.ReloadOnChange = true;
+                    x.PollWaitTime = TimeSpan.FromSeconds(5);
+                });
+
+            return source;
+        }
     }
 }
