@@ -231,7 +231,7 @@ namespace EnigmaNet.Bus.Impl
                 for (var i = 0; i < _threadNumber; i++)
                 {
                     var t = new Thread(new ThreadStart(EventQueueHandler));
-                    t.IsBackground = false;
+                    t.IsBackground = true;
                     t.Start();
                 }
 
