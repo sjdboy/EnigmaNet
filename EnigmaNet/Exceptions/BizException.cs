@@ -12,6 +12,7 @@ namespace EnigmaNet.Exceptions
     public class BizException : Exception
     {
         public string ErrorCode { get; set; }
+        public string EnMessage { get; set; } 
 
         public BizException()
         {
