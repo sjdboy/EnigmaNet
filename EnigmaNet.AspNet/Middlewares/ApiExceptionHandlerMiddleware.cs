@@ -15,6 +15,7 @@ namespace EnigmaNet.AspNet.Middlewares
         {
             public string Code { get; set; }
             public string Message { get; set; }
+            public string EnMessage { get; set; }
         }
 
         const string JsonContentType = "application/json";
@@ -56,7 +57,8 @@ namespace EnigmaNet.AspNet.Middlewares
                         new MessageModel
                         {
                             Code = biz.ErrorCode,
-                            Message = biz.Message
+                            Message = biz.Message,
+                            EnMessage = biz.EnMessage
                         },
                         new JsonSerializerSettings
                         {
@@ -79,7 +81,8 @@ namespace EnigmaNet.AspNet.Middlewares
 
                     var messageString = JsonConvert.SerializeObject(new MessageModel
                     {
-                        Message = arg.Message
+                        Message = arg.Message,
+                        EnMessage = arg.Message
                     },
                     new JsonSerializerSettings
                     {
@@ -100,7 +103,8 @@ namespace EnigmaNet.AspNet.Middlewares
 
                     var messageString = JsonConvert.SerializeObject(new MessageModel
                     {
-                        Message = exception.Message
+                        Message = exception.Message,
+                        EnMessage = exception.Message
                     },
                     new JsonSerializerSettings
                     {
