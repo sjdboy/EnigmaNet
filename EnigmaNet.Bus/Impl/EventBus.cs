@@ -16,7 +16,7 @@ namespace EnigmaNet.Bus.Impl
     /// <remarks>
     /// 发布事件为异步处理方式
     /// </remarks>
-    public sealed class EventBus : IEventPublisher, IEventSubscriber
+    public class EventBus : IEventPublisher, IEventSubscriber
     {
         #region private
 
