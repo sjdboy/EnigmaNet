@@ -45,6 +45,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EnigmaNet.Amap", "EnigmaNet
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EnigmaNet.ChinaDivisions", "EnigmaNet.ChinaDivisions\EnigmaNet.ChinaDivisions.csproj", "{0E4BC57A-60F9-4D7C-B9F0-8D861414F6CC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EnigmaNet.EntityFramework", "EnigmaNet.EntityFramework\EnigmaNet.EntityFramework.csproj", "{3A2F13CB-A3FA-411D-8CA4-05948E9C1051}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -307,6 +309,18 @@ Global
 		{0E4BC57A-60F9-4D7C-B9F0-8D861414F6CC}.Release|x64.Build.0 = Release|Any CPU
 		{0E4BC57A-60F9-4D7C-B9F0-8D861414F6CC}.Release|x86.ActiveCfg = Release|Any CPU
 		{0E4BC57A-60F9-4D7C-B9F0-8D861414F6CC}.Release|x86.Build.0 = Release|Any CPU
+		{3A2F13CB-A3FA-411D-8CA4-05948E9C1051}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3A2F13CB-A3FA-411D-8CA4-05948E9C1051}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3A2F13CB-A3FA-411D-8CA4-05948E9C1051}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{3A2F13CB-A3FA-411D-8CA4-05948E9C1051}.Debug|x64.Build.0 = Debug|Any CPU
+		{3A2F13CB-A3FA-411D-8CA4-05948E9C1051}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{3A2F13CB-A3FA-411D-8CA4-05948E9C1051}.Debug|x86.Build.0 = Debug|Any CPU
+		{3A2F13CB-A3FA-411D-8CA4-05948E9C1051}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3A2F13CB-A3FA-411D-8CA4-05948E9C1051}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3A2F13CB-A3FA-411D-8CA4-05948E9C1051}.Release|x64.ActiveCfg = Release|Any CPU
+		{3A2F13CB-A3FA-411D-8CA4-05948E9C1051}.Release|x64.Build.0 = Release|Any CPU
+		{3A2F13CB-A3FA-411D-8CA4-05948E9C1051}.Release|x86.ActiveCfg = Release|Any CPU
+		{3A2F13CB-A3FA-411D-8CA4-05948E9C1051}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
