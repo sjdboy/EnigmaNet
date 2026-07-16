@@ -20,14 +20,14 @@ public interface IRegionService
     /// </summary>
     /// <param name="provinceId">省份Id</param>
     /// <returns></returns>
-    Task<List<RegionModel>> GetProvinceCitiesAsync(int provinceId);
+    Task<List<RegionModel>> GetProvinceCitiesAsync(long provinceId);
 
     /// <summary>
     /// 获取城市的所有区县
     /// </summary>
     /// <param name="cityId"></param>
     /// <returns></returns>
-    Task<List<RegionModel>> GetCityDistrictsAsync(int cityId);
+    Task<List<RegionModel>> GetCityDistrictsAsync(long cityId);
 
     /// <summary>
     /// 获取指定区域
@@ -35,7 +35,7 @@ public interface IRegionService
     /// <param name="id"></param>
     /// <param name="level"></param>
     /// <returns></returns>
-    Task<RegionModel?> GetRegionAsync(int id, RegionLevel? level = null);
+    Task<RegionModel?> GetRegionAsync(long id, RegionLevel? level = null);
 
     /// <summary>
     /// 获取所有区域
@@ -49,5 +49,5 @@ public interface IRegionService
     /// </summary>
     /// <param name="parentId"></param>
     /// <returns></returns>
-    Task<List<RegionModel>> GetRegionsAsync(int parentId);
+    Task<List<RegionModel>> GetRegionsAsync(long parentId);
 }

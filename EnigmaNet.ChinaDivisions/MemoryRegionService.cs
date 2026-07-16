@@ -118,7 +118,7 @@ public class MemoryRegionService : IRegionService
         _regions = regions;
     }
 
-    public Task<List<RegionModel>> GetCityDistrictsAsync(int cityId)
+    public Task<List<RegionModel>> GetCityDistrictsAsync(long cityId)
     {
         var cityIdString = cityId.ToString();
         var districts = _regions.FindAll(r => r.pid == cityIdString && r.deep == "2");
@@ -137,7 +137,7 @@ public class MemoryRegionService : IRegionService
         return Task.FromResult(result);
     }
 
-    public Task<List<RegionModel>> GetProvinceCitiesAsync(int provinceId)
+    public Task<List<RegionModel>> GetProvinceCitiesAsync(long provinceId)
     {
         var provinceIdString = provinceId.ToString();
         var cities = _regions.FindAll(r => r.pid == provinceIdString && r.deep == "1");
@@ -155,7 +155,7 @@ public class MemoryRegionService : IRegionService
         }
     }
 
-    public Task<RegionModel?> GetRegionAsync(int id, RegionLevel? level = null)
+    public Task<RegionModel?> GetRegionAsync(long id, RegionLevel? level = null)
     {
         if (level.HasValue)
         {
@@ -185,7 +185,7 @@ public class MemoryRegionService : IRegionService
         return Task.FromResult(result);
     }
 
-    public Task<List<RegionModel>> GetRegionsAsync(int parentId)
+    public Task<List<RegionModel>> GetRegionsAsync(long parentId)
     {
         var parentIdString = parentId.ToString();
         var regions = _regions.FindAll(r => r.pid == parentIdString);

@@ -8,7 +8,7 @@ namespace EnigmaNet.ChinaDivisions.Pg;
 
 public class PgRegionService : IRegionService
 {
-    private readonly DivisionDbContext _dbContext;
+    private readonly IDbContextFactory<DivisionDbContext> _dbContextFactory;
 
     private static RegionModel ToRegionModel(AreaEntity entity)
     {
@@ -22,14 +22,16 @@ public class PgRegionService : IRegionService
         };
     }
 
-    public PgRegionService(DivisionDbContext dbContext)
+    public PgRegionService(IDbContextFactory<DivisionDbContext> dbContextFactory)
     {
-        _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+        _dbContextFactory = dbContextFactory ?? throw new ArgumentNullException(nameof(dbContextFactory));
     }
 
-    public async Task<List<RegionModel>> GetCityDistrictsAsync(int cityId)
+    public async Task<List<RegionModel>> GetCityDistrictsAsync(long cityId)
     {
-        var entities = await _dbContext.AreaCodes
+        await using var dbContext = _dbContextFactory.CreateDbContext();
+
+        var entities = await dbContext.AreaCodes
             .AsNoTracking()
             .Where(x => x.ParentCode == cityId && x.Level == RegionLevel.District)
             .OrderBy(x => x.Code)
@@ -40,7 +42,9 @@ public class PgRegionService : IRegionService
 
     public async Task<List<RegionModel>> GetProvicesAsync()
     {
-        var entities = await _dbContext.AreaCodes
+        await using var dbContext = _dbContextFactory.CreateDbContext();
+
+        var entities = await dbContext.AreaCodes
             .AsNoTracking()
             .Where(x => x.ParentCode == 0 && x.Level == RegionLevel.Province)
             .OrderBy(x => x.Code)
@@ -49,9 +53,11 @@ public class PgRegionService : IRegionService
         return entities.Select(ToRegionModel).ToList();
     }
 
-    public async Task<List<RegionModel>> GetProvinceCitiesAsync(int provinceId)
+    public async Task<List<RegionModel>> GetProvinceCitiesAsync(long provinceId)
     {
-        var entities = await _dbContext.AreaCodes
+        await using var dbContext = _dbContextFactory.CreateDbContext();
+
+        var entities = await dbContext.AreaCodes
             .AsNoTracking()
             .Where(x => x.ParentCode == provinceId && x.Level == RegionLevel.City)
             .OrderBy(x => x.Code)
@@ -60,9 +66,11 @@ public class PgRegionService : IRegionService
         return entities.Select(ToRegionModel).ToList();
     }
 
-    public async Task<RegionModel?> GetRegionAsync(int id, RegionLevel? level = null)
+    public async Task<RegionModel?> GetRegionAsync(long id, RegionLevel? level = null)
     {
-        var query = _dbContext.AreaCodes.AsNoTracking().Where(x => x.Code == id);
+        await using var dbContext = _dbContextFactory.CreateDbContext();
+
+        var query = dbContext.AreaCodes.AsNoTracking().Where(x => x.Code == id);
 
         if (level.HasValue)
         {
@@ -78,9 +86,11 @@ public class PgRegionService : IRegionService
         throw new NotSupportedException();
     }
 
-    public async Task<List<RegionModel>> GetRegionsAsync(int parentId)
+    public async Task<List<RegionModel>> GetRegionsAsync(long parentId)
     {
-        var entities = await _dbContext.AreaCodes
+        await using var dbContext = _dbContextFactory.CreateDbContext();
+
+        var entities = await dbContext.AreaCodes
             .AsNoTracking()
             .Where(x => x.ParentCode == parentId)
             .OrderBy(x => x.Code)
