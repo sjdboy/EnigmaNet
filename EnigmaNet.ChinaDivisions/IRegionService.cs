@@ -35,12 +35,13 @@ public interface IRegionService
     /// <param name="id"></param>
     /// <param name="level"></param>
     /// <returns></returns>
-    Task<RegionModel> GetRegionAsync(int id, RegionLevel? level = null);
+    Task<RegionModel?> GetRegionAsync(int id, RegionLevel? level = null);
 
     /// <summary>
     /// 获取所有区域
     /// </summary>
     /// <returns></returns>
+    [Obsolete]
     Task<List<RegionModel>> GetRegionsAsync();
 
     /// <summary>

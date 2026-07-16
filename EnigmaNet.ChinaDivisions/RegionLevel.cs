@@ -18,4 +18,14 @@ public enum RegionLevel
     /// 区县级
     /// </summary>
     District = 3,
+
+    /// <summary>
+    /// 乡镇级
+    /// </summary>
+    Town = 4,
+
+    /// <summary>
+    /// 村级
+    /// </summary>
+    Village = 5,
 }

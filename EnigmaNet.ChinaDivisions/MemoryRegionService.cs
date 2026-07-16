@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Reflection.PortableExecutable;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -14,21 +15,21 @@ public class MemoryRegionService : IRegionService
 {
     class JsonRegionModel
     {
-        public string id { get; set; }
-        public string pid { get; set; }
-        public string name { get; set; }
-        public string deep { get; set; }
-        public string ext_name { get; set; }
+        public required string id { get; set; }
+        public required string pid { get; set; }
+        public required string name { get; set; }
+        public required string deep { get; set; }
+        public string? ext_name { get; set; }
     }
 
     readonly List<JsonRegionModel> _regions = new List<JsonRegionModel>();
 
     List<RegionModel> CopyRegions(List<JsonRegionModel> regions)
     {
-        if (regions == null)
-        {
-            return null;
-        }
+        // if (regions == null)
+        // {
+        //     return null;
+        // }
 
         var result = new List<RegionModel>();
         foreach (var region in regions)
@@ -63,11 +64,6 @@ public class MemoryRegionService : IRegionService
 
     RegionModel TurnRegion(JsonRegionModel region)
     {
-        if (region == null)
-        {
-            return null;
-        }
-
         var level = GetRegionLevel(region.deep);
 
         var idString = region.id;
@@ -78,8 +74,8 @@ public class MemoryRegionService : IRegionService
 
         var data = new RegionModel
         {
-            Id = Convert.ToInt32(idString),
-            ParentId = Convert.ToInt32(region.pid),
+            Code = Convert.ToInt32(idString),
+            ParentCode = Convert.ToInt32(region.pid),
             Name = region.name,
             Level = level,
             ShortName = region.ext_name,
@@ -151,24 +147,35 @@ public class MemoryRegionService : IRegionService
         return Task.FromResult(result);
     }
 
-    public Task<RegionModel> GetRegionAsync(int id, RegionLevel? level = null)
+    void CheckLevelSupport(RegionLevel level)
     {
+        if (level != RegionLevel.Province && level != RegionLevel.City && level != RegionLevel.District)
+        {
+            throw new NotSupportedException($"Region level {level} is not supported");
+        }
+    }
+
+    public Task<RegionModel?> GetRegionAsync(int id, RegionLevel? level = null)
+    {
+        if (level.HasValue)
+        {
+            CheckLevelSupport(level.Value);
+        }
+
         var idString = id.ToString();
 
         var region = level.HasValue
             ? _regions.Find(r => r.id == idString && r.deep == GetDeep(level.Value))
             : _regions.Find(r => r.id == idString);
 
-        // var region = _regions.Find(r => r.id == idString);
-
         if (region == null)
         {
-            return null;
+            return Task.FromResult<RegionModel?>(null);
         }
 
         var data = TurnRegion(region);
 
-        return Task.FromResult(data);
+        return Task.FromResult<RegionModel?>(data!);
     }
 
     public Task<List<RegionModel>> GetRegionsAsync()
