@@ -15,9 +15,16 @@ public class DatabaseForeignKeyMigrationsModelDiffer : MigrationsModelDiffer
     public DatabaseForeignKeyMigrationsModelDiffer(
         IRelationalTypeMappingSource typeMappingSource,
         IMigrationsAnnotationProvider migrationsAnnotationProvider,
+#if NET10_0_OR_GREATER
+    IRelationalAnnotationProvider relationalAnnotationProvider,
+#endif
         IRowIdentityMapFactory rowIdentityMapFactory,
         CommandBatchPreparerDependencies commandBatchPreparerDependencies)
+#if NET10_0_OR_GREATER
+    : base(typeMappingSource, migrationsAnnotationProvider, relationalAnnotationProvider, rowIdentityMapFactory, commandBatchPreparerDependencies)
+#else
         : base(typeMappingSource, migrationsAnnotationProvider, rowIdentityMapFactory, commandBatchPreparerDependencies)
+#endif
     {
     }
 
